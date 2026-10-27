@@ -342,14 +342,9 @@ export function StreamForm({
           </FormSection>
         )}
         <div className='border-foreground/10 flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between'>
-          <p className='text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-sm'>
-            Saves to
-            {platforms.map((platform) => (
-              <span key={platform} className='text-foreground inline-flex items-center gap-1.5 font-medium'>
-                <ProviderIcon provider={platform} className='size-4' />
-                {providerLabel(platform)}
-              </span>
-            ))}
+          {/* Each part's heading says where it goes; this only says one button saves them all. */}
+          <p className='text-muted-foreground text-sm'>
+            {platforms.length > 1 ? 'Saves every part above at once, each to its own platforms.' : 'Saves everything above.'}
           </p>
           <Button type='submit' disabled={isSaving || !form.formState.isDirty}>
             {isSaving ? (
