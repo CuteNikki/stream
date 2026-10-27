@@ -34,9 +34,9 @@ export default async function StreamPage() {
     );
   }
 
-  let details;
+  let channel;
   try {
-    details = await getTwitchChannel(user.id);
+    channel = await getTwitchChannel(user.id);
   } catch (error) {
     if (!(error instanceof TwitchError)) throw error;
     return (
@@ -54,7 +54,11 @@ export default async function StreamPage() {
   return (
     <StreamShell>
       <SettingsSection title='Your stream' description='As it is on Twitch now. Saving sets it everywhere at once.'>
-        <StreamForm details={details ?? { title: '', category: null, tags: [] }} platforms={platforms} />
+        <StreamForm
+          details={channel?.details ?? { title: '', category: null, tags: [], language: 'en', labels: [], brandedContent: false }}
+          matureGame={channel?.matureGame ?? false}
+          platforms={platforms}
+        />
       </SettingsSection>
     </StreamShell>
   );

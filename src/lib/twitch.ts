@@ -2,6 +2,7 @@ import 'server-only';
 
 import { headers } from 'next/headers';
 
+import { CONTENT_LABELS, type ContentLabel } from '@/constants/stream';
 import { auth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import type { Category, StreamDetails } from '@/lib/schemas';
@@ -42,15 +43,22 @@ async function helix<T>(account: { id: string }, path: string, init?: RequestIni
   return response.status === 204 ? null : ((await response.json()) as T);
 }
 
-/** The channel's title, category and tags as they are on Twitch, or null if Twitch isn't connected. */
-export async function getTwitchChannel(userId: string): Promise<StreamDetails | null> {
+/** The channel as it is on Twitch, or null if Twitch isn't connected. */
+export async function getTwitchChannel(userId: string): Promise<{ details: StreamDetails; matureGame: boolean } | null> {
   const account = await twitchAccount(userId);
   if (!account) return null;
 
-  const channels = await helix<{ data: { title: string; game_id: string; game_name: string; tags: string[] }[] }>(
-    account,
-    `channels?broadcaster_id=${account.accountId}`,
-  );
+  const channels = await helix<{
+    data: {
+      title: string;
+      game_id: string;
+      game_name: string;
+      tags: string[];
+      broadcaster_language: string;
+      content_classification_labels: string[];
+      is_branded_content: boolean;
+    }[];
+  }>(account, `channels?broadcaster_id=${account.accountId}`);
   const channel = channels?.data[0];
   if (!channel) throw new TwitchError("Twitch didn't find your channel.");
 
@@ -61,7 +69,18 @@ export async function getTwitchChannel(userId: string): Promise<StreamDetails | 
     category = { id: channel.game_id, name: channel.game_name, boxArt: boxArt(games?.data[0]?.box_art_url ?? '') };
   }
 
-  return { title: channel.title, category, tags: channel.tags };
+  const settable = new Set<string>(CONTENT_LABELS.map((label) => label.id));
+  return {
+    details: {
+      title: channel.title,
+      category,
+      tags: channel.tags,
+      language: channel.broadcaster_language || 'other',
+      labels: channel.content_classification_labels.filter((label): label is ContentLabel => settable.has(label)),
+      brandedContent: channel.is_branded_content,
+    },
+    matureGame: channel.content_classification_labels.includes('MatureGame'),
+  };
 }
 
 /** Twitch's categories matching what's typed, best first. */
@@ -76,13 +95,20 @@ export async function searchTwitchCategories(userId: string, query: string): Pro
   return (results?.data ?? []).map((game) => ({ id: game.id, name: game.name, boxArt: boxArt(game.box_art_url) }));
 }
 
-/** Sets the channel's title, category and tags. No category clears it. */
+/** Sets everything on the channel. No category clears it, and each label is turned on or off. */
 export async function updateTwitchChannel(userId: string, details: StreamDetails) {
   const account = await twitchAccount(userId);
   if (!account) throw new TwitchError('Twitch is no longer connected.');
 
   await helix(account, `channels?broadcaster_id=${account.accountId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ title: details.title, game_id: details.category?.id ?? '', tags: details.tags }),
+    body: JSON.stringify({
+      title: details.title,
+      game_id: details.category?.id ?? '',
+      tags: details.tags,
+      broadcaster_language: details.language,
+      content_classification_labels: CONTENT_LABELS.map((label) => ({ id: label.id, is_enabled: details.labels.includes(label.id) })),
+      is_branded_content: details.brandedContent,
+    }),
   });
 }

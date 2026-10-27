@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { MAX_EMAIL_LENGTH, MAX_NAME_LENGTH, MAX_PASSWORD_LENGTH, MIN_EMAIL_LENGTH, MIN_NAME_LENGTH, MIN_PASSWORD_LENGTH } from '@/constants/auth';
-import { MAX_TAG_LENGTH, MAX_TAGS, MAX_TITLE_LENGTH } from '@/constants/stream';
+import { CONTENT_LABELS, MAX_TAG_LENGTH, MAX_TAGS, MAX_TITLE_LENGTH } from '@/constants/stream';
 
 /** The same rule Better Auth applies, so an address it would turn away is caught here first. */
 export const emailSchema = z
@@ -56,6 +56,10 @@ export const streamSchema = z.object({
     .array(tagSchema)
     .max(MAX_TAGS, `At most ${MAX_TAGS} tags.`)
     .refine((tags) => new Set(tags.map((tag) => tag.toLowerCase())).size === tags.length, 'Each tag only once.'),
+  // An ISO 639-1 code, Twitch's own variants like zh-hk, or "other"
+  language: z.string().regex(/^([a-z]{2,3}(-[a-z]{2})?|other)$/, 'Pick a language.'),
+  labels: z.array(z.enum(CONTENT_LABELS.map((label) => label.id))),
+  brandedContent: z.boolean(),
 });
 
 export type StreamDetails = z.infer<typeof streamSchema>;

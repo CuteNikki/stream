@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { MAX_TITLE_LENGTH } from '@/constants/stream';
+import { CONTENT_LABELS, CONTENT_LABELS_GUIDE, LANGUAGES, MAX_TITLE_LENGTH } from '@/constants/stream';
 import { updateStream } from '@/lib/actions';
 import { providerLabel, type PlatformId } from '@/lib/providers';
 import { streamSchema, type StreamDetails } from '@/lib/schemas';
@@ -16,11 +16,26 @@ import { CategoryPicker } from '@/components/stream/category-picker';
 import { TagInput } from '@/components/stream/tag-input';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 /** The stream's title, category and tags, saved to every platform listed. */
-export function StreamForm({ details, platforms }: { details: StreamDetails; platforms: PlatformId[] }) {
+export function StreamForm({
+  details,
+  matureGame,
+  platforms,
+}: {
+  details: StreamDetails;
+  /** Whether Twitch labels the category mature, which only the category changes. */
+  matureGame: boolean;
+  platforms: PlatformId[];
+}) {
   const [isSaving, setIsSaving] = useState(false);
+  // A language Twitch has that the list doesn't still shows, by its code, rather than an empty box.
+  const languages = LANGUAGES.some((language) => language.code === details.language)
+    ? LANGUAGES
+    : [...LANGUAGES, { code: details.language, name: details.language }];
   const form = useForm<StreamDetails>({
     resolver: zodResolver(streamSchema),
     defaultValues: details,
@@ -85,6 +100,80 @@ export function StreamForm({ details, platforms }: { details: StreamDetails; pla
                 <TagInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} invalid={fieldState.invalid} />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name='language'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Language</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className='w-full sm:w-64'>
+                    <SelectValue />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {languages.map((language) => (
+                    <SelectItem key={language.code} value={language.code}>
+                      {language.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name='labels'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel asChild>
+                <span>Content labels</span>
+              </FormLabel>
+              <FormDescription>
+                What viewers should know before watching.{' '}
+                <a href={CONTENT_LABELS_GUIDE} target='_blank' rel='noreferrer' className='text-primary underline-offset-4 hover:underline'>
+                  What each covers
+                </a>
+              </FormDescription>
+              <div className='grid gap-2.5 pt-1 sm:grid-cols-2'>
+                {CONTENT_LABELS.map((label) => (
+                  <label key={label.id} className='flex cursor-pointer items-start gap-2 text-sm'>
+                    <Checkbox
+                      className='mt-0.5'
+                      checked={field.value.includes(label.id)}
+                      onCheckedChange={(checked) => field.onChange(checked ? [...field.value, label.id] : field.value.filter((id) => id !== label.id))}
+                    />
+                    {label.name}
+                  </label>
+                ))}
+                {matureGame && (
+                  <label className='text-muted-foreground flex items-start gap-2 text-sm'>
+                    <Checkbox className='mt-0.5' checked disabled />
+                    Mature-rated game, set by the category
+                  </label>
+                )}
+              </div>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name='brandedContent'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel asChild>
+                <span>Branded content</span>
+              </FormLabel>
+              <label className='flex cursor-pointer items-start gap-2 text-sm'>
+                <Checkbox className='mt-0.5' checked={field.value} onCheckedChange={(checked) => field.onChange(checked === true)} />
+                The stream has paid product placement, an endorsement, or another commercial relationship.
+              </label>
             </FormItem>
           )}
         />
