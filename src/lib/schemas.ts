@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { MAX_EMAIL_LENGTH, MAX_NAME_LENGTH, MAX_PASSWORD_LENGTH, MIN_EMAIL_LENGTH, MIN_NAME_LENGTH, MIN_PASSWORD_LENGTH } from '@/constants/auth';
+import { MAX_TAG_LENGTH, MAX_TAGS, MAX_TITLE_LENGTH } from '@/constants/stream';
 
 /** The same rule Better Auth applies, so an address it would turn away is caught here first. */
 export const emailSchema = z
@@ -38,6 +39,27 @@ export const setupSchema = z.object({
 export const updateNameSchema = z.object({
   name: nameSchema,
 });
+
+/** Letters and numbers only, in any language: Twitch turns away anything else, spaces included. */
+export const tagSchema = z
+  .string()
+  .trim()
+  .min(1, 'A tag needs at least one character.')
+  .max(MAX_TAG_LENGTH, `Tags must be at most ${MAX_TAG_LENGTH} characters.`)
+  .regex(/^[\p{L}\p{N}]+$/u, 'Tags can only have letters and numbers.');
+
+/** What a stream is set to, on every platform at once. */
+export const streamSchema = z.object({
+  title: z.string().trim().min(1, 'Title is required!').max(MAX_TITLE_LENGTH, `Title must be at most ${MAX_TITLE_LENGTH} characters.`),
+  category: z.object({ id: z.string(), name: z.string(), boxArt: z.string() }).nullable(),
+  tags: z
+    .array(tagSchema)
+    .max(MAX_TAGS, `At most ${MAX_TAGS} tags.`)
+    .refine((tags) => new Set(tags.map((tag) => tag.toLowerCase())).size === tags.length, 'Each tag only once.'),
+});
+
+export type StreamDetails = z.infer<typeof streamSchema>;
+export type Category = NonNullable<StreamDetails['category']>;
 
 export const forgotPasswordSchema = z.object({
   email: emailSchema,
