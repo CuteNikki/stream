@@ -1,0 +1,34 @@
+# stream, on the server at stream.niso.moe. A clone of the repository in
+# ~/services/stream, updated by `bun run deploy`.
+services:
+  # The database brought up to the schema before stream starts on it, each
+  # time it's started. A migration that fails leaves the stream that's
+  # running as it is.
+  migrate:
+    build:
+      context: .
+      target: migrate
+    env_file: .env
+    restart: 'no'
+    labels:
+      dash.purpose: stream's database migrations, before it starts
+
+  stream:
+    build: .
+    container_name: stream
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    # Its secrets: the sign-in secret, the database, the mail server and the
+    # platforms' client secrets. Only on the server, never in the repository.
+    env_file: .env
+    environment:
+      BETTER_AUTH_URL: https://stream.niso.moe
+    networks:
+      - caddy
+
+networks:
+  # Behind Caddy, which serves it at stream.niso.moe
+  caddy:
+    external: true

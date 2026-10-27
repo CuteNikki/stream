@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// The one person who uses stream: there's only ever one account, made on
+/// the first visit (see lib/setup.ts).
+model User {
+  id               String   @id @default(cuid(2))
+  name             String
+  email            String   @unique
+  emailVerified    Boolean  @default(false)
+  image            String?
+  /// Whether signing in with a password asks for a second step.
+  twoFactorEnabled Boolean? @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions   Session[]
+  accounts   Account[]
+  twoFactors TwoFactor[]
+  passkeys   Passkey[]
+}
+
+/// A way to sign in, or a platform connected: `credential` holds the
+/// password; twitch, google (YouTube) and kick hold that platform's tokens,
+/// encrypted, for changing the stream's title and the rest.
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+/// Links sent by email (verifying, changing email, resetting the password),
+/// and devices that skip two-step sign-in.
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+/// How many requests an address has made to an auth endpoint lately, for
+/// Better Auth's rate limits, kept so they survive a restart.
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+}
+
+/// An authenticator app set up for two-step sign-in, with backup codes.
+/// Accounts using email codes only have none.
+model TwoFactor {
+  id                      String    @id
+  /// Encrypted by Better Auth, like the backup codes.
+  secret                  String
+  backupCodes             String
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// False until the first code from the app confirms it's set up.
+  verified                Boolean?  @default(true)
+  /// For locking sign-in after too many wrong codes.
+  failedVerificationCount Int?      @default(0)
+  lockedUntil             DateTime?
+
+  @@index([secret])
+  @@index([userId])
+}
+
+model Passkey {
+  id           String    @id
+  name         String?
+  publicKey    String
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime?
+  /// Which kind of authenticator made it, when it says.
+  aaguid       String?
+
+  @@index([userId])
+  @@index([credentialID])
+}

@@ -1,0 +1,22 @@
+# For working on stream locally: a database, and Mailpit, which catches the
+# emails it sends, to read at http://localhost:8025. `docker compose -f
+# docker-compose.dev.yml up -d`, with .env as in the README.
+name: stream-dev
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: stream
+      POSTGRES_PASSWORD: stream
+      POSTGRES_DB: stream
+    ports:
+      - '127.0.0.1:54329:5432'
+    volumes:
+      - postgres:/var/lib/postgresql/data
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - '127.0.0.1:8025:8025'
+      - '127.0.0.1:1025:1025'
+volumes:
+  postgres:

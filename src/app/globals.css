@@ -1,0 +1,435 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --breakpoint-xs: 30rem;
+  /* Overshoots a little, then settles: for hovers that should feel springy. */
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-wiggle: wiggle 0.5s ease-in-out;
+  /* Only for something that'd better not show at all if it's soon replaced: a loading screen's header, say. */
+  --animate-late: late 0.3s ease-out 0.6s both;
+  /* Placeholders, breathing gently while they wait, never fading to nothing. */
+  --animate-breathe: breathe 1.8s ease-in-out infinite;
+
+  @keyframes breathe {
+    50% {
+      opacity: 0.6;
+    }
+  }
+
+  @keyframes late {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes wiggle {
+    0%,
+    100% {
+      rotate: 0deg;
+    }
+    25% {
+      rotate: -10deg;
+    }
+    50% {
+      rotate: 8deg;
+    }
+    75% {
+      rotate: -4deg;
+    }
+  }
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-heading: var(--font-sans);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Near-neutral greys with a touch of violet, as the be-right-back screen is, and violet for what you act on */
+:root {
+  --radius: 0.75rem;
+  --background: oklch(0.985 0.003 290);
+  --foreground: oklch(0.2 0.015 285);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.015 285);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.015 285);
+  --primary: oklch(0.5 0.22 293);
+  --primary-foreground: oklch(0.98 0.01 293);
+  /* Text in the primary color, dark enough to read on the page */
+  --primary-strong: oklch(0.44 0.2 293);
+  --secondary: oklch(0.955 0.008 290);
+  --secondary-foreground: oklch(0.25 0.02 285);
+  --muted: oklch(0.955 0.008 290);
+  --muted-foreground: oklch(0.47 0.02 285);
+  --accent: oklch(0.95 0.015 293);
+  --accent-foreground: oklch(0.25 0.02 285);
+  --destructive: oklch(0.55 0.21 27);
+  --border: oklch(0.9 0.01 290);
+  --input: oklch(0.9 0.01 290);
+  --ring: oklch(0.6 0.15 293);
+}
+
+.dark {
+  --background: oklch(0.18 0.012 285);
+  --foreground: oklch(0.95 0.005 290);
+  --card: oklch(0.22 0.014 285);
+  --card-foreground: oklch(0.95 0.005 290);
+  --popover: oklch(0.22 0.014 285);
+  --popover-foreground: oklch(0.95 0.005 290);
+  --primary: oklch(0.68 0.18 293);
+  --primary-foreground: oklch(0.16 0.03 293);
+  --primary-strong: oklch(0.78 0.14 293);
+  --secondary: oklch(0.27 0.015 285);
+  --secondary-foreground: oklch(0.95 0.005 290);
+  --muted: oklch(0.27 0.015 285);
+  --muted-foreground: oklch(0.72 0.015 285);
+  --accent: oklch(0.29 0.03 293);
+  --accent-foreground: oklch(0.95 0.005 290);
+  --destructive: oklch(0.68 0.19 25);
+  --border: oklch(1 0 0 / 11%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.6 0.15 293);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  /* Animations */
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-ping {
+    animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  @keyframes ping {
+    75%,
+    100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  @keyframes pulse {
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .animate-bounce {
+    animation: bounce 1s infinite;
+  }
+  @keyframes bounce {
+    0%,
+    100% {
+      transform: translateY(-25%);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: none;
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+}
+
+/*
+ * What comes in as a page opens (see Enter), played by the browser as soon as
+ * the page shows, rather than once its JavaScript has loaded, which on a phone
+ * can be seconds later. The same moves and springs as lib/motion: `soft` for
+ * sections and headings, `pop` for cards and badges, sampled from
+ * Motion's own springs so they overshoot and settle alike. Only `backwards`,
+ * so once in, they leave the element's transform to whatever else moves it.
+ */
+:root {
+  --spring-soft: linear(
+    0,
+    0.013,
+    0.048,
+    0.098,
+    0.157,
+    0.221,
+    0.289,
+    0.356,
+    0.422,
+    0.485,
+    0.544,
+    0.599,
+    0.649,
+    0.695,
+    0.737,
+    0.774,
+    0.807,
+    0.836,
+    0.861,
+    0.884,
+    0.903,
+    0.919,
+    0.934,
+    0.946,
+    0.956,
+    0.965,
+    0.972,
+    0.978,
+    0.983,
+    0.987,
+    0.99,
+    0.993,
+    0.995,
+    0.997,
+    0.998,
+    0.999,
+    1,
+    1.001,
+    1.001,
+    1.001,
+    1
+  );
+  --spring-pop: linear(
+    0,
+    0.022,
+    0.079,
+    0.158,
+    0.25,
+    0.348,
+    0.445,
+    0.538,
+    0.624,
+    0.701,
+    0.769,
+    0.827,
+    0.876,
+    0.916,
+    0.949,
+    0.974,
+    0.993,
+    1.007,
+    1.017,
+    1.023,
+    1.027,
+    1.028,
+    1.028,
+    1.027,
+    1.025,
+    1.022,
+    1.019,
+    1.017,
+    1.014,
+    1.011,
+    1.009,
+    1.007,
+    1.005,
+    1.004,
+    1.003,
+    1.002,
+    1.001,
+    1,
+    1,
+    1,
+    1
+  );
+  /* Quick, for what answers the pointer (see spring-hover). */
+  --spring-snappy: linear(
+    0,
+    0.043,
+    0.146,
+    0.275,
+    0.411,
+    0.539,
+    0.653,
+    0.748,
+    0.826,
+    0.886,
+    0.931,
+    0.964,
+    0.986,
+    1,
+    1.009,
+    1.014,
+    1.015,
+    1.015,
+    1.013,
+    1.012,
+    1.01,
+    1.008,
+    1.006,
+    1.004,
+    1.003,
+    1.002,
+    1.001,
+    1.001,
+    1,
+    1,
+    1
+  );
+}
+
+.enter {
+  animation-delay: var(--enter-delay, 0s);
+  animation-fill-mode: backwards;
+}
+
+.enter-sink,
+.enter-reveal,
+.enter-ring {
+  animation-duration: 590ms;
+  animation-timing-function: var(--spring-soft);
+}
+
+.enter-pop,
+.enter-card {
+  animation-duration: 680ms;
+  animation-timing-function: var(--spring-pop);
+}
+
+.enter-sink {
+  animation-name: enter-sink;
+}
+.enter-reveal {
+  animation-name: enter-reveal;
+}
+.enter-ring {
+  animation-name: enter-ring;
+}
+.enter-pop {
+  animation-name: enter-pop;
+}
+.enter-card {
+  animation-name: enter-card;
+}
+
+@keyframes enter-sink {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.97);
+  }
+}
+@keyframes enter-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+  }
+}
+@keyframes enter-ring {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+@keyframes enter-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.5) rotate(-12deg);
+  }
+}
+@keyframes enter-card {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.94) rotate(-1.5deg);
+  }
+}
+
+/* Any of them with the bouncier spring, like the fields of a form. */
+.enter.spring-pop {
+  animation-duration: 680ms;
+  animation-timing-function: var(--spring-pop);
+}
+
+/* Answering the pointer with the snappy spring, there and back: give it the hover state as scale, rotate or translate classes. */
+.spring-hover {
+  transition-property: scale, rotate, translate;
+  transition-duration: 460ms;
+  transition-timing-function: var(--spring-snappy);
+}
+
+/* Less motion for people who ask their system for it: animations and
+   transitions finish at once. All of the site's movement
+   is CSS, so this covers it all. */
+@media (prefers-reduced-motion: reduce) {
+  /* Without waiting their turn, either. */
+  .enter {
+    animation-delay: 0s !important;
+  }
+
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Center sonner's toast close button vertically, inset on the right edge, instead of hanging off the top-left corner */
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] {
+  padding-right: 2.5rem;
+}
+
+[data-sonner-toaster] [data-close-button] {
+  top: 50% !important;
+  left: unset !important;
+  right: 0.5rem !important;
+  height: 28px !important;
+  width: 28px !important;
+  transform: translateY(-50%) !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--muted-foreground) !important;
+}
+
+[data-sonner-toaster] [data-close-button]:hover {
+  background: transparent !important;
+  color: var(--foreground) !important;
+}
+
+/*
+ * Thin, theme-aware scrollbars instead of the default chunky browser ones.
+ * Note: modern Chrome/Edge (121+) and Firefox both use the standard `scrollbar-color`
+ * property once it's set, which has no hover-state control in the spec — the browser
+ * applies its own native hover shading that CSS cannot override. `::-webkit-scrollbar-thumb`
+ * rules are dead code in those browsers once `scrollbar-color` is present, so we don't add them.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128, 128, 128, 0.5) transparent;
+}
