@@ -90,7 +90,7 @@ them, `.env` has:
 DATABASE_URL=postgresql://stream:stream@localhost:54329/stream
 BETTER_AUTH_SECRET=   # openssl rand -base64 32
 BETTER_AUTH_URL=http://localhost:3000
-SMTP_URL=smtp://localhost:1025
+SMTP_URL=smtp://127.0.0.1:1025  # not localhost, which nodemailer can resolve to the LAN address
 ```
 
 To connect platforms while developing, add
