@@ -60,12 +60,12 @@ function layout(heading: string, body: string) {
 }
 
 async function sendEmail(email: { to: string; subject: string; heading: string; body: string; text: string }) {
-  // Our mail server, e.g. smtps://no-reply%40niso.moe:password@mail.niso.moe
+  // The mail server, e.g. smtps://no-reply%40example.com:password@mail.example.com
   const url = process.env.SMTP_URL;
   if (!url) throw new Error('Set SMTP_URL to send emails.');
 
   await nodemailer.createTransport(url).sendMail({
-    from: process.env.EMAIL_FROM ?? 'stream <no-reply@niso.moe>',
+    from: process.env.EMAIL_FROM ?? `stream <no-reply@${siteURL.hostname}>`,
     to: email.to,
     subject: email.subject,
     text: email.text,

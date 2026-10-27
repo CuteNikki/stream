@@ -1,10 +1,13 @@
-// Puts stream on the server: main is pushed, pulled into ~/services/stream, a
-// clone of the repository, then built and started. Its .env, kept only there,
-// stays.
-// The server as SSH knows it, and stream's clone there; STREAM_SSH_HOST and
-// STREAM_SERVER_DIR in .env.local, which Bun reads, say otherwise
-const SERVER = process.env.STREAM_SSH_HOST || 'vps.niso.moe';
-const DIR = process.env.STREAM_SERVER_DIR || '~/services/stream';
+// Puts stream on your server: main is pushed, pulled into the clone of the
+// repository there, then built and started. Its .env, kept only there, stays.
+// The server as SSH knows it, and stream's clone there, from .env.local, which
+// Bun reads
+const SERVER = process.env.STREAM_SSH_HOST;
+const DIR = process.env.STREAM_SERVER_DIR || '~/stream';
+if (!SERVER) {
+  console.error('Set STREAM_SSH_HOST in .env.local to the server, as ssh knows it');
+  process.exit(1);
+}
 const BRANCH = 'main';
 
 /** Runs a command, its output shown, and stops everything if it fails. */

@@ -38,6 +38,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# a server's own additions to docker-compose.yml
+compose.override.yaml
+
 # vercel
 .vercel
 

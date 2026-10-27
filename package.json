@@ -81,5 +81,6 @@
     "effect": "3.20.0",
     "mysql2": "3.24.5"
   },
-  "description": "Sets the title, category and tags of your stream on Twitch, YouTube and Kick at once"
+  "description": "Sets the title, category and tags of your stream on Twitch, YouTube and Kick at once",
+  "license": "MIT"
 }

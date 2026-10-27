@@ -146,8 +146,9 @@ export const auth = betterAuth({
     },
   },
   rateLimit: {
-    // On in production only, per IP address, from the address Caddy passes
-    // on. Counted in the database, so a restart doesn't start it over.
+    // On in production only, per IP address, from the address the reverse
+    // proxy passes on. Counted in the database, so a restart doesn't start it
+    // over.
     storage: 'database',
     // Sign-in codes are emails, so they get a tighter limit than the default
     // 100 requests per 10 seconds, as does guessing a password.

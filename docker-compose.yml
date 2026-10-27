@@ -1,17 +1,14 @@
-# stream, on the server at stream.niso.moe. A clone of the repository in
-# ~/services/stream, updated by `bun run deploy`.
+# stream and its database's migrations, which run first, each time it's
+# started: a migration that fails leaves the stream that's running as it is.
+# Put it behind a reverse proxy that serves it over HTTPS at BETTER_AUTH_URL;
+# passkeys and the platforms' sign-in need HTTPS.
 services:
-  # The database brought up to the schema before stream starts on it, each
-  # time it's started. A migration that fails leaves the stream that's
-  # running as it is.
   migrate:
     build:
       context: .
       target: migrate
     env_file: .env
     restart: 'no'
-    labels:
-      dash.purpose: stream's database migrations, before it starts
 
   stream:
     build: .
@@ -21,14 +18,9 @@ services:
       migrate:
         condition: service_completed_successfully
     # Its secrets: the sign-in secret, the database, the mail server and the
-    # platforms' client secrets. Only on the server, never in the repository.
+    # platforms' client secrets. Never in the repository.
     env_file: .env
-    environment:
-      BETTER_AUTH_URL: https://stream.niso.moe
-    networks:
-      - caddy
-
-networks:
-  # Behind Caddy, which serves it at stream.niso.moe
-  caddy:
-    external: true
+    # For a reverse proxy on the same machine. One in Docker can reach it on
+    # a shared network instead: add that in a compose.override.yaml.
+    ports:
+      - '127.0.0.1:${STREAM_PORT:-3000}:3000'
