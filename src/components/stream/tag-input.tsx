@@ -95,7 +95,18 @@ export function TagInput({
           className='placeholder:text-muted-foreground min-w-32 flex-1 bg-transparent py-0.5 text-base outline-none disabled:cursor-not-allowed md:text-sm'
         />
       </div>
-      {problem && <p className='text-destructive text-sm'>{problem}</p>}
+      <div className='flex justify-between gap-3 text-sm'>
+        {problem ? (
+          <p className='text-destructive'>{problem}</p>
+        ) : (
+          <p className='text-muted-foreground'>
+            Up to {MAX_TAGS} tags of {MAX_TAG_LENGTH} characters each: letters and numbers only, no spaces or symbols.
+          </p>
+        )}
+        <p className='text-muted-foreground shrink-0 tabular-nums'>
+          {value.length}/{MAX_TAGS}
+        </p>
+      </div>
     </div>
   );
 }
