@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // A server of its own, with only what it needs, for the Docker image
   output: 'standalone',
+  experimental: {
+    // YouTube takes thumbnails of up to 2MB, sent through a server action; the rest is room for the form around it
+    serverActions: { bodySizeLimit: '3mb' },
+  },
 
   async headers() {
     return [

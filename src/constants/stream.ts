@@ -1,6 +1,18 @@
 // Twitch's; YouTube's titles are shorter still, so with it connected the form holds them to that
 export const MAX_TITLE_LENGTH = 140;
 export const MAX_YOUTUBE_TITLE_LENGTH = 100;
+export const MAX_YOUTUBE_DESCRIPTION_LENGTH = 5000;
+
+/** Who can find and watch a YouTube stream. */
+export const YOUTUBE_VISIBILITIES = [
+  { id: 'public', name: 'Public', note: 'Anyone can find and watch it.' },
+  { id: 'unlisted', name: 'Unlisted', note: 'Only people with the link can watch it.' },
+  { id: 'private', name: 'Private', note: 'Only you can watch it.' },
+] as const;
+
+/** YouTube's limit on a custom thumbnail, and the kinds it takes. */
+export const MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024;
+export const THUMBNAIL_TYPES = ['image/jpeg', 'image/png'];
 
 export const MAX_TAGS = 10;
 export const MAX_TAG_LENGTH = 25;

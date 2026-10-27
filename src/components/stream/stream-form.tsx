@@ -6,7 +6,16 @@ import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { CONTENT_LABELS, CONTENT_LABELS_GUIDE, LANGUAGES, MAX_TITLE_LENGTH, MAX_YOUTUBE_TITLE_LENGTH, YOUTUBE_CATEGORIES } from '@/constants/stream';
+import {
+  CONTENT_LABELS,
+  CONTENT_LABELS_GUIDE,
+  LANGUAGES,
+  MAX_TITLE_LENGTH,
+  MAX_YOUTUBE_DESCRIPTION_LENGTH,
+  MAX_YOUTUBE_TITLE_LENGTH,
+  YOUTUBE_CATEGORIES,
+  YOUTUBE_VISIBILITIES,
+} from '@/constants/stream';
 import { updateStream } from '@/lib/actions';
 import { providerLabel, type PlatformId } from '@/lib/providers';
 import { streamSchema, type StreamDetails } from '@/lib/schemas';
@@ -15,11 +24,13 @@ import type { YouTubeBroadcast } from '@/lib/youtube';
 import { ProviderIcon } from '@/components/common/provider-icon';
 import { CategoryPicker } from '@/components/stream/category-picker';
 import { TagInput } from '@/components/stream/tag-input';
+import { ThumbnailUpload } from '@/components/stream/thumbnail-upload';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 /** Marks a field that only one platform has, when there's more than one to save to. */
 function Only({ platform, platforms }: { platform: PlatformId; platforms: PlatformId[] }) {
@@ -69,6 +80,7 @@ export function StreamForm({
     defaultValues: details,
   });
   const title = useWatch({ control: form.control, name: 'title' });
+  const description = useWatch({ control: form.control, name: 'youtube.description' });
 
   async function onSubmit(data: StreamDetails) {
     setIsSaving(true);
@@ -117,35 +129,6 @@ export function StreamForm({
                 <FormControl>
                   <CategoryPicker value={field.value} onChange={field.onChange} />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-        {hasYouTube && (
-          <FormField
-            control={form.control}
-            name='youtubeCategory'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  {hasTwitch ? 'YouTube category' : 'Category'} <Only platform='google' platforms={platforms} />
-                </FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger className='w-full sm:w-64'>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {YOUTUBE_CATEGORIES.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>YouTube&apos;s broad ones. The game itself can only be picked in YouTube Studio.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -242,6 +225,101 @@ export function StreamForm({
             </FormItem>
           )}
         />
+        {details.youtube && (
+          <section aria-labelledby='youtube-only' className='border-foreground/10 flex flex-col gap-5 border-t pt-5'>
+            <h3 id='youtube-only' className='flex items-center gap-2 font-bold'>
+              <ProviderIcon provider='google' className='size-5' />
+              {hasTwitch ? 'Only on YouTube' : 'YouTube'}
+            </h3>
+            <FormField
+              control={form.control}
+              name='youtube.category'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className='w-full sm:w-64'>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {YOUTUBE_CATEGORIES.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>YouTube&apos;s broad ones. The game itself can only be picked in YouTube Studio.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='youtube.description'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea rows={5} maxLength={MAX_YOUTUBE_DESCRIPTION_LENGTH} className='max-h-96' {...field} />
+                  </FormControl>
+                  <FormDescription className='flex justify-end tabular-nums'>
+                    {description?.length ?? 0}/{MAX_YOUTUBE_DESCRIPTION_LENGTH}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='youtube.visibility'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Visibility</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className='w-full sm:w-64'>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {YOUTUBE_VISIBILITIES.map((visibility) => (
+                        <SelectItem key={visibility.id} value={visibility.id}>
+                          {visibility.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>{YOUTUBE_VISIBILITIES.find((visibility) => visibility.id === field.value)?.note}</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='youtube.madeForKids'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel asChild>
+                    <span>Audience</span>
+                  </FormLabel>
+                  <label className='flex cursor-pointer items-start gap-2 text-sm'>
+                    <Checkbox className='mt-0.5' checked={field.value} onCheckedChange={(checked) => field.onChange(checked === true)} />
+                    Made for kids. YouTube then turns off live chat, comments and personalised ads.
+                  </label>
+                </FormItem>
+              )}
+            />
+            {youtube?.broadcast && (
+              <div className='flex flex-col gap-2'>
+                <p className='text-sm font-medium'>Thumbnail</p>
+                <ThumbnailUpload thumbnail={youtube.broadcast.thumbnail} />
+              </div>
+            )}
+          </section>
+        )}
         <div className='flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between'>
           <p className='text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-sm'>
             Saves to

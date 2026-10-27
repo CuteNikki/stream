@@ -6,6 +6,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
+import { MAX_THUMBNAIL_SIZE, THUMBNAIL_TYPES } from '@/constants/stream';
 import { auth, forgetTrustedDevices as forget } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { PlatformError } from '@/lib/platform';
@@ -13,7 +14,7 @@ import { PLATFORMS, providerLabel, type PlatformId } from '@/lib/providers';
 import { streamSchema, updateNameSchema, type Category, type StreamDetails } from '@/lib/schemas';
 import { getSession, requireUser } from '@/lib/session';
 import { searchTwitchCategories, updateTwitchChannel } from '@/lib/twitch';
-import { updateYouTubeStream } from '@/lib/youtube';
+import { setYouTubeThumbnail, updateYouTubeStream } from '@/lib/youtube';
 
 export async function logOut() {
   await auth.api.signOut({ headers: await headers() });
@@ -122,6 +123,24 @@ export async function updateStream(unsafeData: StreamDetails): Promise<{ results
 
   revalidatePath('/');
   return { results };
+}
+
+/** Puts a new thumbnail on the YouTube stream, straight away rather than with the rest. */
+export async function uploadThumbnail(data: FormData): Promise<{ thumbnail: string | null } | { message: string }> {
+  const session = await getSession();
+  if (!session) return { message: 'You are not signed in.' };
+
+  const image = data.get('thumbnail');
+  if (!(image instanceof File) || !THUMBNAIL_TYPES.includes(image.type)) return { message: 'Thumbnails have to be a JPG or PNG.' };
+  if (image.size > MAX_THUMBNAIL_SIZE) return { message: 'Thumbnails can be at most 2 MB.' };
+
+  try {
+    return { thumbnail: await setYouTubeThumbnail(session.user.id, image) };
+  } catch (error) {
+    if (error instanceof PlatformError) return { message: error.message };
+    console.error(error);
+    return { message: 'Unable to upload the thumbnail!' };
+  }
 }
 
 export async function setPassword(newPassword: string) {

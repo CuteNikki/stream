@@ -17,8 +17,8 @@ import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = homeMetadata;
 
-/** What the form starts from where no platform says otherwise. */
-const EMPTY: StreamDetails = { title: '', category: null, tags: [], language: 'en', labels: [], brandedContent: false, youtubeCategory: '20' };
+/** What the form starts from where no platform says otherwise. YouTube's own fields only come from YouTube. */
+const EMPTY: StreamDetails = { title: '', category: null, tags: [], language: 'en', labels: [], brandedContent: false };
 
 /** A platform that couldn't be read says why, and the rest still load. */
 async function settle<T>(read: Promise<T>) {
@@ -52,7 +52,7 @@ export default async function StreamPage() {
   const [twitch, youtube] = await Promise.all([settle(getTwitchChannel(user.id)), settle(getYouTubeStream(user.id))]);
   const problems = [twitch.problem, youtube.problem].filter((problem) => problem !== undefined);
   const youtubeStream = youtube.value && youtube.value.broadcast ? youtube.value : null;
-  // Twitch's where both have it, as it has more of them; YouTube's category is its own.
+  // Twitch's where both have it, as it has more of them; YouTube's own fields are YouTube's.
   const details: StreamDetails = { ...EMPTY, ...youtubeStream?.details, ...twitch.value?.details };
   const source = twitch.value ? 'Twitch' : youtubeStream ? 'YouTube' : null;
 

@@ -1,7 +1,15 @@
 import { z } from 'zod';
 
 import { MAX_EMAIL_LENGTH, MAX_NAME_LENGTH, MAX_PASSWORD_LENGTH, MIN_EMAIL_LENGTH, MIN_NAME_LENGTH, MIN_PASSWORD_LENGTH } from '@/constants/auth';
-import { CONTENT_LABELS, MAX_TAG_LENGTH, MAX_TAGS, MAX_TITLE_LENGTH, YOUTUBE_CATEGORIES } from '@/constants/stream';
+import {
+  CONTENT_LABELS,
+  MAX_TAG_LENGTH,
+  MAX_TAGS,
+  MAX_TITLE_LENGTH,
+  MAX_YOUTUBE_DESCRIPTION_LENGTH,
+  YOUTUBE_CATEGORIES,
+  YOUTUBE_VISIBILITIES,
+} from '@/constants/stream';
 
 /** The same rule Better Auth applies, so an address it would turn away is caught here first. */
 export const emailSchema = z
@@ -60,11 +68,23 @@ export const streamSchema = z.object({
   language: z.string().regex(/^([a-z]{2,3}(-[a-z]{2})?|other)$/, 'Pick a language.'),
   labels: z.array(z.enum(CONTENT_LABELS.map((label) => label.id))),
   brandedContent: z.boolean(),
-  // Its own category, as YouTube's are broad and don't follow Twitch's games
-  youtubeCategory: z.enum(YOUTUBE_CATEGORIES.map((category) => category.id)),
+  // Only sent once they've been read from YouTube, so a YouTube that couldn't be read is never set to blanks.
+  youtube: z
+    .object({
+      // Its own, as YouTube's are broad and don't follow Twitch's games
+      category: z.enum(YOUTUBE_CATEGORIES.map((category) => category.id)),
+      description: z
+        .string()
+        .max(MAX_YOUTUBE_DESCRIPTION_LENGTH, `Description must be at most ${MAX_YOUTUBE_DESCRIPTION_LENGTH} characters.`)
+        .refine((description) => !/[<>]/.test(description), "YouTube descriptions can't have < or >."),
+      visibility: z.enum(YOUTUBE_VISIBILITIES.map((visibility) => visibility.id)),
+      madeForKids: z.boolean(),
+    })
+    .optional(),
 });
 
 export type StreamDetails = z.infer<typeof streamSchema>;
+export type YouTubeDetails = NonNullable<StreamDetails['youtube']>;
 export type Category = NonNullable<StreamDetails['category']>;
 
 export const forgotPasswordSchema = z.object({
