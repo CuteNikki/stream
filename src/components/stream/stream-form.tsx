@@ -6,10 +6,11 @@ import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { CONTENT_LABELS, CONTENT_LABELS_GUIDE, LANGUAGES, MAX_TITLE_LENGTH } from '@/constants/stream';
+import { CONTENT_LABELS, CONTENT_LABELS_GUIDE, LANGUAGES, MAX_TITLE_LENGTH, MAX_YOUTUBE_TITLE_LENGTH, YOUTUBE_CATEGORIES } from '@/constants/stream';
 import { updateStream } from '@/lib/actions';
 import { providerLabel, type PlatformId } from '@/lib/providers';
 import { streamSchema, type StreamDetails } from '@/lib/schemas';
+import type { YouTubeBroadcast } from '@/lib/youtube';
 
 import { ProviderIcon } from '@/components/common/provider-icon';
 import { CategoryPicker } from '@/components/stream/category-picker';
@@ -20,24 +21,51 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-/** The stream's title, category and tags, saved to every platform listed. */
+/** Marks a field that only one platform has, when there's more than one to save to. */
+function Only({ platform, platforms }: { platform: PlatformId; platforms: PlatformId[] }) {
+  if (platforms.length < 2) return null;
+  return (
+    <span className='text-muted-foreground inline-flex items-center gap-1 text-xs font-normal'>
+      <ProviderIcon provider={platform} className='size-3.5' />
+      {providerLabel(platform)} only
+    </span>
+  );
+}
+
+/** Where a save lands on YouTube, which is a broadcast and not the channel. */
+function YouTubeTarget({ broadcast }: { broadcast: YouTubeBroadcast | null }) {
+  if (!broadcast) return <span className='text-destructive font-normal'>(no stream coming up)</span>;
+  return <span className='text-muted-foreground font-normal'>({broadcast.live ? 'live now' : 'next stream'})</span>;
+}
+
+/** The stream's details, saved to every platform listed. */
 export function StreamForm({
   details,
   matureGame,
   platforms,
+  youtube,
 }: {
   details: StreamDetails;
   /** Whether Twitch labels the category mature, which only the category changes. */
   matureGame: boolean;
   platforms: PlatformId[];
+  /** The broadcast a save sets on YouTube, if YouTube's connected. */
+  youtube?: { broadcast: YouTubeBroadcast | null };
 }) {
   const [isSaving, setIsSaving] = useState(false);
   // A language Twitch has that the list doesn't still shows, by its code, rather than an empty box.
   const languages = LANGUAGES.some((language) => language.code === details.language)
     ? LANGUAGES
     : [...LANGUAGES, { code: details.language, name: details.language }];
+  const hasYouTube = platforms.includes('google');
+  const hasTwitch = platforms.includes('twitch');
+  const titleLimit = hasYouTube ? MAX_YOUTUBE_TITLE_LENGTH : MAX_TITLE_LENGTH;
   const form = useForm<StreamDetails>({
-    resolver: zodResolver(streamSchema),
+    resolver: zodResolver(
+      streamSchema.extend({
+        title: streamSchema.shape.title.max(titleLimit, `Title must be at most ${titleLimit} characters${hasYouTube ? ', for YouTube' : ''}.`),
+      }),
+    ),
     defaultValues: details,
   });
   const title = useWatch({ control: form.control, name: 'title' });
@@ -71,25 +99,58 @@ export function StreamForm({
                 <Input autoComplete='off' maxLength={MAX_TITLE_LENGTH} {...field} />
               </FormControl>
               <FormDescription className='flex justify-end tabular-nums'>
-                {title.length}/{MAX_TITLE_LENGTH}
+                {title.length}/{titleLimit}
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name='category'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <FormControl>
-                <CategoryPicker value={field.value} onChange={field.onChange} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {hasTwitch && (
+          <FormField
+            control={form.control}
+            name='category'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Category <Only platform='twitch' platforms={platforms} />
+                </FormLabel>
+                <FormControl>
+                  <CategoryPicker value={field.value} onChange={field.onChange} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+        {hasYouTube && (
+          <FormField
+            control={form.control}
+            name='youtubeCategory'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  {hasTwitch ? 'YouTube category' : 'Category'} <Only platform='google' platforms={platforms} />
+                </FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className='w-full sm:w-64'>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {YOUTUBE_CATEGORIES.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>YouTube&apos;s broad ones. The game itself can only be picked in YouTube Studio.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         <FormField
           control={form.control}
           name='tags'
@@ -127,41 +188,45 @@ export function StreamForm({
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name='labels'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel asChild>
-                <span>Content labels</span>
-              </FormLabel>
-              <FormDescription>
-                What viewers should know before watching.{' '}
-                <a href={CONTENT_LABELS_GUIDE} target='_blank' rel='noreferrer' className='text-primary underline-offset-4 hover:underline'>
-                  What each covers
-                </a>
-              </FormDescription>
-              <div className='grid gap-2.5 pt-1 sm:grid-cols-2'>
-                {CONTENT_LABELS.map((label) => (
-                  <label key={label.id} className='flex cursor-pointer items-start gap-2 text-sm'>
-                    <Checkbox
-                      className='mt-0.5'
-                      checked={field.value.includes(label.id)}
-                      onCheckedChange={(checked) => field.onChange(checked ? [...field.value, label.id] : field.value.filter((id) => id !== label.id))}
-                    />
-                    {label.name}
-                  </label>
-                ))}
-                {matureGame && (
-                  <label className='text-muted-foreground flex items-start gap-2 text-sm'>
-                    <Checkbox className='mt-0.5' checked disabled />
-                    Mature-rated game, set by the category
-                  </label>
-                )}
-              </div>
-            </FormItem>
-          )}
-        />
+        {hasTwitch && (
+          <FormField
+            control={form.control}
+            name='labels'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel asChild>
+                  <span>
+                    Content labels <Only platform='twitch' platforms={platforms} />
+                  </span>
+                </FormLabel>
+                <FormDescription>
+                  What viewers should know before watching.{' '}
+                  <a href={CONTENT_LABELS_GUIDE} target='_blank' rel='noreferrer' className='text-primary underline-offset-4 hover:underline'>
+                    What each covers
+                  </a>
+                </FormDescription>
+                <div className='grid gap-2.5 pt-1 sm:grid-cols-2'>
+                  {CONTENT_LABELS.map((label) => (
+                    <label key={label.id} className='flex cursor-pointer items-start gap-2 text-sm'>
+                      <Checkbox
+                        className='mt-0.5'
+                        checked={field.value.includes(label.id)}
+                        onCheckedChange={(checked) => field.onChange(checked ? [...field.value, label.id] : field.value.filter((id) => id !== label.id))}
+                      />
+                      {label.name}
+                    </label>
+                  ))}
+                  {matureGame && (
+                    <label className='text-muted-foreground flex items-start gap-2 text-sm'>
+                      <Checkbox className='mt-0.5' checked disabled />
+                      Mature-rated game, set by the category
+                    </label>
+                  )}
+                </div>
+              </FormItem>
+            )}
+          />
+        )}
         <FormField
           control={form.control}
           name='brandedContent'
@@ -184,6 +249,7 @@ export function StreamForm({
               <span key={platform} className='text-foreground inline-flex items-center gap-1.5 font-medium'>
                 <ProviderIcon provider={platform} className='size-4' />
                 {providerLabel(platform)}
+                {platform === 'google' && youtube && <YouTubeTarget broadcast={youtube.broadcast} />}
               </span>
             ))}
           </p>

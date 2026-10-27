@@ -8,10 +8,12 @@ import { z } from 'zod';
 
 import { auth, forgetTrustedDevices as forget } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { PlatformError } from '@/lib/platform';
 import { PLATFORMS, providerLabel, type PlatformId } from '@/lib/providers';
 import { streamSchema, updateNameSchema, type Category, type StreamDetails } from '@/lib/schemas';
 import { getSession, requireUser } from '@/lib/session';
-import { searchTwitchCategories, TwitchError, updateTwitchChannel } from '@/lib/twitch';
+import { searchTwitchCategories, updateTwitchChannel } from '@/lib/twitch';
+import { updateYouTubeStream } from '@/lib/youtube';
 
 export async function logOut() {
   await auth.api.signOut({ headers: await headers() });
@@ -77,7 +79,7 @@ export async function searchCategories(query: string): Promise<{ categories: Cat
   try {
     return { categories: await searchTwitchCategories(session.user.id, typed) };
   } catch (error) {
-    if (error instanceof TwitchError) return { message: error.message };
+    if (error instanceof PlatformError) return { message: error.message };
     console.error(error);
     return { message: 'Unable to search categories!' };
   }
@@ -87,7 +89,7 @@ export async function searchCategories(query: string): Promise<{ categories: Cat
 export type PlatformResult = { platform: PlatformId; ok: true } | { platform: PlatformId; ok: false; message: string };
 
 /**
- * Sets the stream's title, category and tags on every connected platform. Each goes on its own, so one failing
+ * Sets the stream's details on every connected platform. Each goes on its own, so one failing
  * doesn't stop the others; the results say how each went.
  */
 export async function updateStream(unsafeData: StreamDetails): Promise<{ results: PlatformResult[] } | { message: string }> {
@@ -98,21 +100,22 @@ export async function updateStream(unsafeData: StreamDetails): Promise<{ results
   if (!session) return { message: 'You are not signed in.' };
 
   const connected = await prisma.account.findMany({ where: { userId: session.user.id }, select: { providerId: true } });
-  const updates: Partial<Record<PlatformId, () => Promise<void>>> = {
+  const updates: Record<PlatformId, () => Promise<void>> = {
     twitch: () => updateTwitchChannel(session.user.id, data),
+    google: () => updateYouTubeStream(session.user.id, data),
   };
 
-  const platforms = PLATFORMS.map((platform) => platform.id).filter((id) => updates[id] && connected.some((account) => account.providerId === id));
+  const platforms = PLATFORMS.map((platform) => platform.id).filter((id) => connected.some((account) => account.providerId === id));
   if (!platforms.length) return { message: 'Connect a platform first.' };
 
   const results = await Promise.all(
     platforms.map(async (platform): Promise<PlatformResult> => {
       try {
-        await updates[platform]!();
+        await updates[platform]();
         return { platform, ok: true };
       } catch (error) {
-        if (!(error instanceof TwitchError)) console.error(error);
-        return { platform, ok: false, message: error instanceof TwitchError ? error.message : `Unable to update ${providerLabel(platform)}!` };
+        if (!(error instanceof PlatformError)) console.error(error);
+        return { platform, ok: false, message: error instanceof PlatformError ? error.message : `Unable to update ${providerLabel(platform)}!` };
       }
     }),
   );

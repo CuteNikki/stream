@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { MAX_EMAIL_LENGTH, MAX_NAME_LENGTH, MAX_PASSWORD_LENGTH, MIN_EMAIL_LENGTH, MIN_NAME_LENGTH, MIN_PASSWORD_LENGTH } from '@/constants/auth';
-import { CONTENT_LABELS, MAX_TAG_LENGTH, MAX_TAGS, MAX_TITLE_LENGTH } from '@/constants/stream';
+import { CONTENT_LABELS, MAX_TAG_LENGTH, MAX_TAGS, MAX_TITLE_LENGTH, YOUTUBE_CATEGORIES } from '@/constants/stream';
 
 /** The same rule Better Auth applies, so an address it would turn away is caught here first. */
 export const emailSchema = z
@@ -60,6 +60,8 @@ export const streamSchema = z.object({
   language: z.string().regex(/^([a-z]{2,3}(-[a-z]{2})?|other)$/, 'Pick a language.'),
   labels: z.array(z.enum(CONTENT_LABELS.map((label) => label.id))),
   brandedContent: z.boolean(),
+  // Its own category, as YouTube's are broad and don't follow Twitch's games
+  youtubeCategory: z.enum(YOUTUBE_CATEGORIES.map((category) => category.id)),
 });
 
 export type StreamDetails = z.infer<typeof streamSchema>;

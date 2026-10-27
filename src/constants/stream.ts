@@ -1,5 +1,6 @@
-// Twitch's limits, the tightest of the platforms
+// Twitch's; YouTube's titles are shorter still, so with it connected the form holds them to that
 export const MAX_TITLE_LENGTH = 140;
+export const MAX_YOUTUBE_TITLE_LENGTH = 100;
 
 export const MAX_TAGS = 10;
 export const MAX_TAG_LENGTH = 25;
@@ -58,6 +59,27 @@ export const CONTENT_LABELS = [
 ] as const;
 
 export type ContentLabel = (typeof CONTENT_LABELS)[number]['id'];
+
+/**
+ * YouTube's categories a video can be put in, by id. Broad ones only: the game itself isn't something its API
+ * can set, so that's still picked in YouTube Studio.
+ */
+export const YOUTUBE_CATEGORIES = [
+  { id: '20', name: 'Gaming' },
+  { id: '22', name: 'People & Blogs' },
+  { id: '24', name: 'Entertainment' },
+  { id: '10', name: 'Music' },
+  { id: '23', name: 'Comedy' },
+  { id: '27', name: 'Education' },
+  { id: '26', name: 'Howto & Style' },
+  { id: '28', name: 'Science & Technology' },
+  { id: '17', name: 'Sports' },
+  { id: '1', name: 'Film & Animation' },
+  { id: '25', name: 'News & Politics' },
+  { id: '15', name: 'Pets & Animals' },
+  { id: '19', name: 'Travel & Events' },
+  { id: '2', name: 'Autos & Vehicles' },
+] as const;
 
 /** What Twitch counts as each label. */
 export const CONTENT_LABELS_GUIDE = 'https://safety.twitch.tv/s/article/Content-Classification-Guidelines';
