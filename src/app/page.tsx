@@ -19,7 +19,7 @@ export default async function StreamPage() {
     <PageShell eyebrow='Your stream' title='Stream' description='Set what your stream is called, and what it is, on every platform at once.'>
       {platforms === 0 && (
         <div className='bg-card flex flex-col items-start gap-3 rounded-2xl border p-6'>
-          <p className='text-sm'>Connect a platform first, so stream has somewhere to set it.</p>
+          <p className='text-sm'>Connect a platform first, so Stream has somewhere to set it.</p>
           <Button asChild>
             <Link href='/platforms'>Connect a platform</Link>
           </Button>

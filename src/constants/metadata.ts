@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 
-export const SITE_NAME = 'stream';
+export const SITE_NAME = 'Stream';
 
 /**
  * Shared by every page. It's only ever for its one account, so nothing of it

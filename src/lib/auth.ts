@@ -41,7 +41,7 @@ function credentials(id: PlatformId) {
 /** Platforms with credentials set, so they can be connected. */
 export const enabledPlatforms: PlatformId[] = PLATFORMS.map((platform) => platform.id).filter((id) => credentials(id));
 
-// What each platform lets stream do, asked for when it's connected: changing
+// What each platform lets Stream do, asked for when it's connected: changing
 // the stream's title and the rest. Google only hands out a refresh token,
 // which keeps it connected past an hour, when asked for offline access, and
 // only the first time unless it's asked to show its consent screen again.
@@ -69,7 +69,7 @@ export const auth = betterAuth({
   },
   socialProviders,
   account: {
-    // Platforms' tokens are what lets stream change your streams, so they
+    // Platforms' tokens are what lets Stream change your streams, so they
     // never sit in the database readable.
     encryptOAuthTokens: true,
     accountLinking: {
@@ -86,7 +86,7 @@ export const auth = betterAuth({
         // Every way of making one ends here, so none of them gets around it.
         before: async () => {
           if ((await prisma.user.count()) > 0) {
-            throw new APIError('FORBIDDEN', { code: 'SIGN_UP_CLOSED', message: 'stream already has its account.' });
+            throw new APIError('FORBIDDEN', { code: 'SIGN_UP_CLOSED', message: 'Stream already has its account.' });
           }
         },
       },
@@ -173,7 +173,7 @@ export const auth = betterAuth({
     // authenticator app or by email, or a backup code. Passkeys are already
     // two steps, so they skip it.
     twoFactor({
-      issuer: 'stream',
+      issuer: 'Stream',
       otpOptions: {
         period: 5,
         // Only a hash is kept, like a password.
@@ -187,7 +187,7 @@ export const auth = betterAuth({
     }),
     passkey({
       rpID: siteURL.hostname,
-      rpName: 'stream',
+      rpName: 'Stream',
       origin: siteURL.origin,
     }),
     // Must be last: lets server actions set auth cookies.

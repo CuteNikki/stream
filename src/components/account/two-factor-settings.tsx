@@ -411,7 +411,7 @@ function BackupCodes({ codes }: { codes: string[] }) {
           Copy
         </Button>
         <Button variant='outline' size='sm' asChild>
-          <a href={`data:text/plain;charset=utf-8,${encodeURIComponent(`stream backup codes\n\n${text}\n`)}`} download='stream-backup-codes.txt'>
+          <a href={`data:text/plain;charset=utf-8,${encodeURIComponent(`Stream backup codes\n\n${text}\n`)}`} download='stream-backup-codes.txt'>
             <DownloadIcon />
             Download
           </a>

@@ -20,7 +20,7 @@ export default async function PlatformsPage({ searchParams }: PageProps<'/platfo
     <PageShell
       eyebrow='Where you stream'
       title='Platforms'
-      description='Connect the platforms you stream to, so stream can set your title, category and tags there.'
+      description='Connect the platforms you stream to, so Stream can set your title, category and tags there.'
     >
       <SettingsSection title='Connected platforms'>
         <PlatformList platforms={enabledPlatforms} accounts={accounts} error={typeof error === 'string' ? error : undefined} />

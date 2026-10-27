@@ -38,7 +38,7 @@ function layout(heading: string, body: string) {
         <td align="center" style="padding:24px 16px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
             <tr>
-              <td align="center" style="background:${colors.header};border-radius:16px;padding:20px 24px;font-family:sans-serif;font-size:26px;font-weight:bold;letter-spacing:1px;color:#ffffff;">stream</td>
+              <td align="center" style="background:${colors.header};border-radius:16px;padding:20px 24px;font-family:sans-serif;font-size:26px;font-weight:bold;letter-spacing:1px;color:#ffffff;">Stream</td>
             </tr>
             <tr>
               <td style="padding:28px 4px 8px;font-family:sans-serif;font-size:15px;line-height:1.6;color:${colors.foreground};text-wrap:pretty;">
@@ -65,7 +65,7 @@ async function sendEmail(email: { to: string; subject: string; heading: string; 
   if (!url) throw new Error('Set SMTP_URL to send emails.');
 
   await nodemailer.createTransport(url).sendMail({
-    from: process.env.EMAIL_FROM ?? `stream <no-reply@${siteURL.hostname}>`,
+    from: process.env.EMAIL_FROM ?? `Stream <no-reply@${siteURL.hostname}>`,
     to: email.to,
     subject: email.subject,
     text: email.text,
@@ -92,14 +92,14 @@ function button(url: string, label: string, color = colors.primary) {
 export async function sendPasswordResetEmail({ email, name, url }: { email: string; name: string; url: string }) {
   await sendEmail({
     to: email,
-    subject: 'Reset your stream password',
+    subject: 'Reset your Stream password',
     heading: 'Reset your password',
     body: `
-      <p>Hi ${escapeHtml(name)}, we received a request to reset your stream password. Click the link below to choose a new one. This link expires in 1 hour.</p>
+      <p>Hi ${escapeHtml(name)}, we received a request to reset your Stream password. Click the link below to choose a new one. This link expires in 1 hour.</p>
       ${button(url, 'Reset Password')}
       <p>If you didn't request this, you can safely ignore this email.</p>
     `,
-    text: `Hi ${name},\n\nWe received a request to reset your stream password. Open this link to choose a new one:\n\n${url}\n\nThis link expires in 1 hour. If you didn't request this, you can safely ignore this email.`,
+    text: `Hi ${name},\n\nWe received a request to reset your Stream password. Open this link to choose a new one:\n\n${url}\n\nThis link expires in 1 hour. If you didn't request this, you can safely ignore this email.`,
   });
 }
 
@@ -117,11 +117,11 @@ export async function sendVerificationEmail({
 }) {
   const ignore = changing
     ? "If you didn't ask to change your email, you can safely ignore this email."
-    : "If you didn't set up stream, you can safely ignore this email.";
+    : "If you didn't set up Stream, you can safely ignore this email.";
 
   await sendEmail({
     to: email,
-    subject: changing ? 'Confirm your new email for stream' : 'Verify your email for stream',
+    subject: changing ? 'Confirm your new email for Stream' : 'Verify your email for Stream',
     heading: changing ? 'Confirm your new email' : 'Verify your email',
     body: `
       <p>Hi ${escapeHtml(name)}, please confirm this is your email address by clicking the link below. This link expires in 24 hours.</p>
@@ -136,14 +136,14 @@ export async function sendVerificationEmail({
 export async function sendEmailChangeConfirmation({ email, name, newEmail, url }: { email: string; name: string; newEmail: string; url: string }) {
   await sendEmail({
     to: email,
-    subject: 'Confirm your email change for stream',
+    subject: 'Confirm your email change for Stream',
     heading: 'Confirm your email change',
     body: `
-      <p>Hi ${escapeHtml(name)}, someone (hopefully you) asked to change the email address of your stream account to <strong>${escapeHtml(newEmail)}</strong>. Click the link below to confirm, and we'll send one last link to the new address. This link expires in 24 hours.</p>
+      <p>Hi ${escapeHtml(name)}, someone (hopefully you) asked to change the email address of your Stream account to <strong>${escapeHtml(newEmail)}</strong>. Click the link below to confirm, and we'll send one last link to the new address. This link expires in 24 hours.</p>
       ${button(url, 'Confirm Change')}
       <p>If you didn't ask for this, ignore this email and consider changing your password.</p>
     `,
-    text: `Hi ${name},\n\nSomeone (hopefully you) asked to change the email address of your stream account to ${newEmail}. Open this link to confirm, and we'll send one last link to the new address:\n\n${url}\n\nThis link expires in 24 hours. If you didn't ask for this, ignore this email and consider changing your password.`,
+    text: `Hi ${name},\n\nSomeone (hopefully you) asked to change the email address of your Stream account to ${newEmail}. Open this link to confirm, and we'll send one last link to the new address:\n\n${url}\n\nThis link expires in 24 hours. If you didn't ask for this, ignore this email and consider changing your password.`,
   });
 }
 
@@ -151,14 +151,14 @@ export async function sendEmailChangeConfirmation({ email, name, newEmail, url }
 export async function sendTwoFactorCode({ email, name, code }: { email: string; name: string; code: string }) {
   await sendEmail({
     to: email,
-    subject: `${code} is your stream sign-in code`,
+    subject: `${code} is your Stream sign-in code`,
     heading: 'Your sign-in code',
     body: `
       <p>Hi ${escapeHtml(name)}, here's your code:</p>
       <p style="margin:20px 0;padding:14px 0 14px 8px;background:${colors.tint};border-radius:10px;text-align:center;font-family:sans-serif;font-size:30px;font-weight:bold;letter-spacing:8px;font-variant-numeric:tabular-nums;color:${colors.primaryStrong};">${code}</p>
-      <p>It expires in 5 minutes. If you didn't just sign in, someone may know your password: change it in stream's settings.</p>
+      <p>It expires in 5 minutes. If you didn't just sign in, someone may know your password: change it in Stream's settings.</p>
     `,
-    text: `Hi ${name},\n\nYour code to finish signing in is:\n\n${code}\n\nIt expires in 5 minutes. If you didn't just sign in, someone may know your password: change it in stream's settings.`,
+    text: `Hi ${name},\n\nYour code to finish signing in is:\n\n${code}\n\nIt expires in 5 minutes. If you didn't just sign in, someone may know your password: change it in Stream's settings.`,
   });
 }
 

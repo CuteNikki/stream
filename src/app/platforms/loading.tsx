@@ -6,7 +6,7 @@ export default function PlatformsLoading() {
     <PageLoading
       eyebrow='Where you stream'
       title='Platforms'
-      description='Connect the platforms you stream to, so stream can set your title, category and tags there.'
+      description='Connect the platforms you stream to, so Stream can set your title, category and tags there.'
     >
       <Skeleton className='h-40 rounded-2xl' />
     </PageLoading>

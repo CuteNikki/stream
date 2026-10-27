@@ -14,7 +14,7 @@ export default async function SetupPage() {
   if (await hasOwner()) redirect('/sign-in');
 
   return (
-    <AuthShell title='Set up stream' description="Make the account you'll sign in with. It's the only one: once it's made, nobody else can make another.">
+    <AuthShell title='Set up Stream' description="Make the account you'll sign in with. It's the only one: once it's made, nobody else can make another.">
       <SetupForm />
     </AuthShell>
   );

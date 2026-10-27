@@ -45,7 +45,7 @@ export function SetupForm() {
       const message = error.message ?? 'Unable to create account!';
       // Someone set it up first, in another tab say
       if (error.code === 'SIGN_UP_CLOSED') {
-        toast.error('stream is already set up. Sign in instead.', { duration: 5000, position: 'top-center' });
+        toast.error('Stream is already set up. Sign in instead.', { duration: 5000, position: 'top-center' });
         return router.push('/sign-in');
       }
 

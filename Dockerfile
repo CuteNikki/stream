@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package.json bun.lock prisma.config.ts ./
 COPY prisma ./prisma
 # Prisma's migrations engine isn't needed to generate its client, nor by
-# stream, only by the migrate stage below. Saying it's there keeps Prisma from
+# Stream, only by the migrate stage below. Saying it's there keeps Prisma from
 # downloading it, which from Docker's network, with no IPv6, can time out.
 # Generating the client reads DATABASE_URL, which isn't used to build: any
 # address will do.
@@ -14,7 +14,7 @@ RUN bun install --frozen-lockfile
 COPY . .
 RUN bun run build
 
-# The database's migrations, which compose's migrate runs before stream starts:
+# The database's migrations, which compose's migrate runs before Stream starts:
 # Prisma and the migrations alone, at the version package.json names. Its
 # engine is downloaded with it, a few tries if need be: from Docker's network,
 # with no IPv6, a connection to Prisma's host now and then times out

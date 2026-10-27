@@ -1,4 +1,4 @@
-# For working on stream locally: a database, and Mailpit, which catches the
+# For working on Stream locally: a database, and Mailpit, which catches the
 # emails it sends, to read at http://localhost:8025. `docker compose -f
 # docker-compose.dev.yml up -d`, with .env as in the README.
 name: stream-dev

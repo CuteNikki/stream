@@ -1,7 +1,7 @@
-/** stream's mark: a dot that's live, with the signal going out from it. */
+/** Stream's mark: a dot that's live, with the signal going out from it. */
 export function Logo({ ...props }: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' aria-label='stream' {...props}>
+    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' aria-label='Stream' {...props}>
       <rect width='32' height='32' rx='8' className='fill-primary' />
       <circle cx='16' cy='16' r='3.5' className='fill-primary-foreground' />
       <path

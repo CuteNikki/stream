@@ -17,7 +17,7 @@ const PLATFORM_IDS = new Set<string>(PLATFORMS.map((platform) => platform.id));
 /**
  * The platforms stream changes your stream on: connect one to let it, or
  * disconnect it to stop it. Connecting signs in to the platform, which asks
- * whether stream may.
+ * whether Stream may.
  */
 export function PlatformList({
   platforms,
@@ -60,7 +60,7 @@ export function PlatformList({
     const label = providerLabel(account.providerId);
     const confirmed = await ask({
       title: `Disconnect ${label}?`,
-      description: `stream can't change your stream on ${label} anymore, until you connect it again.`,
+      description: `Stream can't change your stream on ${label} anymore, until you connect it again.`,
       action: 'Disconnect',
       destructive: true,
     });
@@ -85,7 +85,7 @@ export function PlatformList({
   if (!shown.length) {
     return (
       <p className='text-muted-foreground text-sm'>
-        No platforms are set up yet. Each needs its client id and secret in stream&apos;s .env, as TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET (see the README).
+        No platforms are set up yet. Each needs its client id and secret in Stream&apos;s .env, as TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET (see the README).
       </p>
     );
   }

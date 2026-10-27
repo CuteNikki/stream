@@ -1,6 +1,6 @@
-// Puts stream on your server: main is pushed, pulled into the clone of the
+// Puts Stream on your server: main is pushed, pulled into the clone of the
 // repository there, then built and started. Its .env, kept only there, stays.
-// The server as SSH knows it, and stream's clone there, from .env.local, which
+// The server as SSH knows it, and Stream's clone there, from .env.local, which
 // Bun reads
 const SERVER = process.env.STREAM_SSH_HOST;
 const DIR = process.env.STREAM_SERVER_DIR || '~/stream';

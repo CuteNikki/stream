@@ -1,4 +1,4 @@
-# stream and its database's migrations, which run first, each time it's
+# Stream and its database's migrations, which run first, each time it's
 # started: a migration that fails leaves the stream that's running as it is.
 # Put it behind a reverse proxy that serves it over HTTPS at BETTER_AUTH_URL;
 # passkeys and the platforms' sign-in need HTTPS.

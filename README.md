@@ -1,4 +1,4 @@
-# stream
+# Stream
 
 Sets your stream's title, category and tags on every platform at once:
 Twitch and YouTube to begin with, Kick to come. You host it yourself, for
@@ -18,7 +18,7 @@ Since it holds the keys to your channels, signing in is kept strict:
 ## Running it
 
 You need Docker, a PostgreSQL database, a mail server to send from (for
-sign-in codes and password resets), and a reverse proxy that serves stream
+sign-in codes and password resets), and a reverse proxy that serves Stream
 over HTTPS: passkeys and the platforms' sign-in need it.
 
 ```bash
@@ -28,11 +28,11 @@ cp .env.example .env    # then fill it in
 docker compose up -d --build
 ```
 
-stream listens on `127.0.0.1:3000`, or on `STREAM_PORT` if set, for your
+Stream listens on `127.0.0.1:3000`, or on `STREAM_PORT` if set, for your
 reverse proxy. If the proxy runs in Docker, put both on a shared network
 instead, in a `compose.override.yaml` next to `docker-compose.yml`. Each time
 it starts, the database's migrations run first, in a one-off `migrate`
-container, and stream only starts once they've gone through.
+container, and Stream only starts once they've gone through.
 
 Open it at your `BETTER_AUTH_URL`, and it asks you to set up your account.
 
@@ -44,9 +44,9 @@ All in `.env`:
 | ---------------------- | ------------------------------------------------------------------------------------ |
 | `DATABASE_URL`         | The PostgreSQL database                                                              |
 | `BETTER_AUTH_SECRET`   | Signs sessions and encrypts the platforms' tokens: `openssl rand -base64 32`         |
-| `BETTER_AUTH_URL`      | Where stream runs, e.g. `https://stream.example.com`                                 |
+| `BETTER_AUTH_URL`      | Where Stream runs, e.g. `https://stream.example.com`                                 |
 | `SMTP_URL`             | The mail server, e.g. `smtps://no-reply%40example.com:password@mail.example.com`     |
-| `EMAIL_FROM`           | Who emails come from; `stream <no-reply@…>` at `BETTER_AUTH_URL`'s domain unless set |
+| `EMAIL_FROM`           | Who emails come from; `Stream <no-reply@…>` at `BETTER_AUTH_URL`'s domain unless set |
 | `<PLATFORM>_CLIENT_ID` | A platform's client id and secret, which turn it on (see below)                      |
 | `STREAM_PORT`          | The port on `127.0.0.1` that `docker-compose.yml` publishes; `3000` unless set       |
 
@@ -68,7 +68,7 @@ For YouTube, the Google Cloud project also needs the **YouTube Data API v3**
 turned on, and its OAuth consent screen set up, with yourself added as a test
 user while it's in testing.
 
-Then connect each one on the Platforms page. stream asks Twitch for
+Then connect each one on the Platforms page. Stream asks Twitch for
 `channel:manage:broadcast`, and Google for `youtube.force-ssl`: what they need
 to change your stream, and nothing else.
 
@@ -83,7 +83,7 @@ bun run dev
 ```
 
 `docker-compose.dev.yml` runs a database and [Mailpit](https://mailpit.axllent.org/),
-which catches the emails stream sends, to read at http://localhost:8025. For
+which catches the emails Stream sends, to read at http://localhost:8025. For
 them, `.env` has:
 
 ```bash

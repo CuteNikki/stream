@@ -12,7 +12,7 @@ export default async function SignInPage() {
   await requireSignedOut();
 
   return (
-    <AuthShell title='Sign in to stream' description='Set what your stream is called, and what it is, everywhere at once.'>
+    <AuthShell title='Sign in to Stream' description='Set what your stream is called, and what it is, everywhere at once.'>
       <SignInForm />
     </AuthShell>
   );

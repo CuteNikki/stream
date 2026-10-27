@@ -22,7 +22,7 @@ export async function Navbar() {
       <nav className='container mx-auto flex h-14 max-w-5xl items-center gap-1 px-4 sm:px-6'>
         <Link href='/' className='mr-3 flex items-center gap-2 font-bold tracking-tight'>
           <Logo className='size-7' />
-          stream
+          Stream
         </Link>
         {session && LINKS.map((link) => <NavLink key={link.href} {...link} />)}
         <div className='ml-auto flex items-center gap-1'>
@@ -41,7 +41,7 @@ export function NavbarFallback() {
       <nav className='container mx-auto flex h-14 max-w-5xl items-center px-4 sm:px-6'>
         <span className='flex items-center gap-2 font-bold tracking-tight'>
           <Logo className='size-7' />
-          stream
+          Stream
         </span>
       </nav>
     </header>
