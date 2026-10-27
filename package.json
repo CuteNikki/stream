@@ -9,7 +9,7 @@
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit && tsc --noEmit -p scripts",
     "lint": "eslint",
-    "lint:classes": "node scripts/check-classes.mjs",
+    "lint:classes": "bun scripts/check-classes.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "postinstall": "bun --bun --env-file=.env run prisma generate",
