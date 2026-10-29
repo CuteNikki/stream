@@ -16,16 +16,21 @@ RUN bun run build
 
 # The database's migrations, which compose's migrate runs before Stream starts:
 # Prisma and the migrations alone, at the version package.json names. Its
-# engine is downloaded with it, a few tries if need be: from Docker's network,
-# with no IPv6, a connection to Prisma's host now and then times out
+# engine is downloaded with it, as it's built: from Docker's network, with no
+# IPv6, a connection to Prisma's host now and then times out. Tries, each
+# waiting longer, ride out a while of it not answering, and each checks the
+# engine came, as Prisma's own download fails quietly
 FROM oven/bun:1.4.0-alpine AS migrate
 WORKDIR /app
 COPY package.json ./app.json
-RUN echo '{ "private": true }' > package.json \
-  && for try in 1 2 3 4; do \
-    bun add prisma@$(bun -e 'console.log(require("./app.json").devDependencies.prisma)') && break; \
-    [ "$try" = 4 ] && exit 1; \
-    sleep 5; \
+RUN echo '{ "private": true, "trustedDependencies": ["prisma", "@prisma/engines"] }' > package.json \
+  && for try in 1 2 3 4 5 6; do \
+    bun add prisma@$(bun -e 'console.log(require("./app.json").devDependencies.prisma)') \
+    && ls node_modules/@prisma/engines/schema-engine-* >/dev/null 2>&1 \
+    && break; \
+    [ "$try" = 6 ] && { echo "Couldn't download Prisma's engine" >&2; exit 1; }; \
+    rm -rf node_modules; \
+    sleep $((try * 10)); \
   done
 COPY prisma.config.ts ./
 COPY prisma ./prisma
