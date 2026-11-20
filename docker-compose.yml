@@ -9,6 +9,10 @@ services:
       target: migrate
     env_file: .env
     restart: 'no'
+    # A job that runs before each start, not a service: dash leaves it off its
+    # board
+    labels:
+      dash.purpose: the database's migrations, before the site starts
 
   stream:
     build: .
