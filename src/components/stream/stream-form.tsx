@@ -260,8 +260,9 @@ export function StreamForm({
                     <span>Streams</span>
                   </FormLabel>
                   <FormDescription>
-                    Saving sets every ticked one. The fields show the first ticked one as it was when the page loaded. A thumbnail goes on as soon as it&apos;s
-                    picked: a JPG or PNG of up to 2 MB, 1280x720 for the sharpest.
+                    Saving sets every ticked one. A stream with a vertical one added in YouTube Studio is a single broadcast here, so setting it sets both. The
+                    fields show the first ticked one as it was when the page loaded. A thumbnail goes on as soon as it&apos;s picked: a JPG or PNG of up to 2
+                    MB, 1280x720 for the sharpest.
                   </FormDescription>
                   <BroadcastPicker broadcasts={youtube.broadcasts} value={field.value ?? []} onChange={field.onChange} />
                   <FormMessage />
