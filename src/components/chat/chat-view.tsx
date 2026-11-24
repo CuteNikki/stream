@@ -76,7 +76,7 @@ export function ChatView() {
         </TabButton>
         {sources.map((source) => (
           <TabButton key={source.id} current={shownTab === source.id} onClick={() => pickTab(source.id)}>
-            <ProviderIcon provider={source.platform} className='size-4' />
+            <ProviderIcon provider={source.platform} plain={shownTab === source.id} className='size-4' />
             {source.name}
             <span
               className={cn(

@@ -8,11 +8,14 @@ const icons: Record<PlatformId, { path: string; hex: string }> = {
   google: siYoutube,
 };
 
-/** A platform's logo, in its own color, sized like a Lucide icon. */
-export function ProviderIcon({ provider, className }: { provider: PlatformId; className?: string }) {
+/**
+ * A platform's logo, in its own color, sized like a Lucide icon. With `plain`, in the text's color instead, for
+ * where its own wouldn't show, like Twitch's purple on a purple button.
+ */
+export function ProviderIcon({ provider, plain, className }: { provider: PlatformId; plain?: boolean; className?: string }) {
   const { path, hex } = icons[provider];
   return (
-    <svg viewBox='0 0 24 24' className={className} fill={`#${hex}`} aria-hidden='true'>
+    <svg viewBox='0 0 24 24' className={className} fill={plain ? 'currentColor' : `#${hex}`} aria-hidden='true'>
       <path d={path} />
     </svg>
   );
