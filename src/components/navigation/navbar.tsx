@@ -1,3 +1,4 @@
+import { LinkIcon, RadioTowerIcon, SettingsIcon } from 'lucide-react';
 import Link from 'next/link';
 
 import { getSession } from '@/lib/session';
@@ -8,9 +9,9 @@ import { NavLink } from '@/components/navigation/nav-link';
 import { ThemeButton } from '@/components/theme/switch';
 
 const LINKS = [
-  { href: '/', label: 'Stream' },
-  { href: '/platforms', label: 'Platforms' },
-  { href: '/settings', label: 'Settings' },
+  { href: '/', label: 'Stream', icon: <RadioTowerIcon className='size-4' aria-hidden='true' /> },
+  { href: '/platforms', label: 'Platforms', icon: <LinkIcon className='size-4' aria-hidden='true' /> },
+  { href: '/settings', label: 'Settings', icon: <SettingsIcon className='size-4' aria-hidden='true' /> },
 ];
 
 /** Across the top: the pages, once signed in, and the theme either way. */
@@ -22,7 +23,7 @@ export async function Navbar() {
       <nav className='container mx-auto flex h-14 max-w-5xl items-center gap-1 px-4 sm:px-6'>
         <Link href='/' className='mr-3 flex items-center gap-2 font-bold tracking-tight'>
           <Logo className='size-7' />
-          Stream
+          <span className='sr-only sm:not-sr-only'>Stream</span>
         </Link>
         {session && LINKS.map((link) => <NavLink key={link.href} {...link} />)}
         <div className='ml-auto flex items-center gap-1'>
@@ -41,7 +42,7 @@ export function NavbarFallback() {
       <nav className='container mx-auto flex h-14 max-w-5xl items-center px-4 sm:px-6'>
         <span className='flex items-center gap-2 font-bold tracking-tight'>
           <Logo className='size-7' />
-          Stream
+          <span className='sr-only sm:not-sr-only'>Stream</span>
         </span>
       </nav>
     </header>
