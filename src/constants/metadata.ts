@@ -52,6 +52,10 @@ export const platformsMetadata: Metadata = {
   title: 'Platforms',
 };
 
+export const chatMetadata: Metadata = {
+  title: 'Chat',
+};
+
 export const settingsMetadata: Metadata = {
   title: 'Settings',
 };

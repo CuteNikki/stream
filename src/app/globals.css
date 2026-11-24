@@ -6,6 +6,8 @@
 
 @theme inline {
   --breakpoint-xs: 30rem;
+  /* The navbar's height, border included, so a page can fill exactly what's under it (h-navbar). */
+  --spacing-navbar: 3.5rem;
   /* Overshoots a little, then settles: for hovers that should feel springy. */
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
   --animate-wiggle: wiggle 0.5s ease-in-out;

@@ -1,9 +1,11 @@
 # Stream
 
 Sets your stream's title, category and tags on every platform at once:
-Twitch and YouTube to begin with, Kick to come. You host it yourself, for
-yourself: the first visit makes your account, and nobody can make another
-after.
+Twitch and YouTube to begin with, Kick to come. On YouTube it sets each stream
+you tick, so a vertical copy beside the stream gets the same. Its chat page
+shows every platform's chat live, one at a time or all together, and writes in
+every chat or the one you pick. You host it yourself, for yourself: the first
+visit makes your account, and nobody can make another after.
 
 Since it holds the keys to your channels, signing in is kept strict:
 
