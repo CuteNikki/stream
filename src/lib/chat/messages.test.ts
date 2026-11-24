@@ -27,6 +27,7 @@ describe('twitchMessage', () => {
     expect(message).toEqual({
       id: 'twitch:m1',
       source: 'twitch',
+      platform: 'twitch',
       author: { name: 'Viewer', color: '#FF0000', roles: ['moderator', 'subscriber'] },
       parts: [
         { type: 'text', text: 'hi ' },
@@ -71,6 +72,7 @@ describe('youtubeItem', () => {
       message: {
         id: 'youtube:b1:y1',
         source: 'youtube:b1',
+        platform: 'google',
         author: { name: 'Viewer', color: null, roles: ['moderator', 'member'] },
         parts: [{ type: 'text', text: 'hello' }],
         paid: null,

@@ -28,6 +28,7 @@ export function twitchMessage(event: ChatMessageEvent, time: string): ChatMessag
   return {
     id: `${TWITCH_SOURCE}:${event.message_id}`,
     source: TWITCH_SOURCE,
+    platform: 'twitch',
     author: {
       name: event.chatter_user_name,
       color: event.color || null,
@@ -74,6 +75,7 @@ export function youtubeItem(source: string, item: LiveChatMessage): { message: C
     message: {
       id: `${source}:${item.id}`,
       source,
+      platform: 'google',
       author: { name: authorDetails.displayName, color: null, roles },
       parts: text ? [{ type: 'text', text }] : [],
       paid: snippet.superChatDetails?.amountDisplayString ?? snippet.superStickerDetails?.amountDisplayString ?? null,

@@ -148,7 +148,12 @@ function ChatFeed({ messages, sources, emptyText }: { messages: ChatMessage[]; s
             {messages.map((message) => {
               const source = sources?.find((known) => known.id === message.source);
               return (
-                <ChatMessageRow key={message.id} message={message} source={source} showSource={!source ? 'none' : perPlatform(source) > 1 ? 'name' : 'icon'} />
+                <ChatMessageRow
+                  key={message.id}
+                  message={message}
+                  source={source}
+                  showSource={!sources ? 'none' : source && perPlatform(source) > 1 ? 'name' : 'icon'}
+                />
               );
             })}
           </ul>

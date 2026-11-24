@@ -26,10 +26,10 @@ export function ChatMessageRow({ message, source, showSource }: { message: ChatM
       <time dateTime={message.time} className='text-muted-foreground mr-2 text-xs tabular-nums'>
         {timeFormat.format(new Date(message.time))}
       </time>
-      {showSource !== 'none' && source && (
+      {showSource !== 'none' && (
         <span className='mr-1.5 inline-flex items-center gap-1 align-middle'>
-          <ProviderIcon provider={source.platform} className='size-3.5' />
-          {showSource === 'name' && <span className='text-muted-foreground text-xs'>{source.name}</span>}
+          <ProviderIcon provider={message.platform} className='size-3.5' />
+          {showSource === 'name' && source && <span className='text-muted-foreground text-xs'>{source.name}</span>}
         </span>
       )}
       {message.author.roles.map((role) => {

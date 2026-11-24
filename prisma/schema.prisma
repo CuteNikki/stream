@@ -25,6 +25,8 @@ model User {
   accounts   Account[]
   twoFactors TwoFactor[]
   passkeys   Passkey[]
+
+  chatMessages ChatMessage[]
 }
 
 /// A way to sign in, or a platform connected: `credential` holds the
@@ -121,4 +123,20 @@ model Passkey {
 
   @@index([userId])
   @@index([credentialID])
+}
+
+/// A chat message kept for a day, so the chat page still has the latest
+/// after Stream restarts: Twitch can't be asked for what was said before.
+model ChatMessage {
+  /// Its id in the chat, starting with its source's, e.g. twitch:<id>.
+  id     String   @id
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// The chat it came from, e.g. twitch or youtube:<broadcast id>.
+  source String
+  /// Its platform, author, parts and paid amount, as the chat shows them.
+  data   Json
+  time   DateTime
+
+  @@index([userId, time])
 }

@@ -5,11 +5,14 @@ import { startTwitchChat, type ChatSink } from '@/lib/chat/twitch';
 import type { ChatEvent, ChatMessage, ChatSource } from '@/lib/chat/types';
 import { startYouTubeChat } from '@/lib/chat/youtube';
 import { PlatformError, platformAccount } from '@/lib/platform';
+import prisma from '@/lib/prisma';
 import { hasAllScopes } from '@/lib/providers';
 import { listBroadcasts } from '@/lib/youtube';
 
 /** Messages kept for a chat page opened later, so it doesn't start empty. */
 const BACKLOG = 300;
+/** How long messages are kept in the database, for after a restart. */
+const HISTORY_MS = 24 * 60 * 60_000;
 /** How often the platforms are checked again while the chat's open: YouTube for broadcasts that went live or ended, Twitch for being connected again. */
 const CHECK_MS = 2 * 60_000;
 /** A page opened while a chat has a problem checks again at once, but not more often than this. */
@@ -74,14 +77,17 @@ class ChatHub {
       messages: (messages) => {
         this.backlog = [...this.backlog, ...messages].slice(-BACKLOG);
         this.emit({ type: 'messages', messages });
+        this.save(messages);
       },
       deleted: (ids) => {
         this.backlog = this.backlog.filter((message) => !ids.includes(message.id));
         this.emit({ type: 'deleted', ids });
+        this.forget(prisma.chatMessage.deleteMany({ where: { userId: this.userId, id: { in: ids } } }));
       },
       cleared: () => {
         this.backlog = this.backlog.filter((message) => message.source !== id);
         this.emit({ type: 'cleared', source: id });
+        this.forget(prisma.chatMessage.deleteMany({ where: { userId: this.userId, source: id } }));
       },
       state: (state, problem) => {
         const connection = this.connections.get(id);
@@ -106,6 +112,7 @@ class ChatHub {
 
   private async start() {
     this.running = true;
+    await this.loadHistory();
     await this.check();
     this.checkTimer = setInterval(() => void this.check(), CHECK_MS);
   }
@@ -118,6 +125,7 @@ class ChatHub {
 
   private async check() {
     this.lastCheck = Date.now();
+    this.forget(prisma.chatMessage.deleteMany({ where: { userId: this.userId, time: { lt: new Date(Date.now() - HISTORY_MS) } } }));
     await this.checkTwitch();
     await this.checkYouTube();
   }
@@ -180,6 +188,42 @@ class ChatHub {
       );
     }
     if (gone.length || added.length) this.emit({ type: 'sources', sources: this.sources() });
+  }
+
+  /** The messages kept from before Stream last started, as Twitch can't be asked for them. */
+  private async loadHistory() {
+    try {
+      const rows = await prisma.chatMessage.findMany({
+        where: { userId: this.userId, time: { gt: new Date(Date.now() - HISTORY_MS) } },
+        orderBy: { time: 'desc' },
+        take: BACKLOG,
+      });
+      const known = new Set(this.backlog.map((message) => message.id));
+      const history = rows
+        .toReversed()
+        .filter((row) => !known.has(row.id))
+        .map((row) => ({ ...(row.data as Omit<ChatMessage, 'id' | 'source' | 'time'>), id: row.id, source: row.source, time: row.time.toISOString() }));
+      if (!history.length) return;
+      this.backlog = [...history, ...this.backlog].slice(-BACKLOG);
+      this.emit({ type: 'messages', messages: history });
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  /** Keeps messages for after a restart, apart from the chat itself: one that isn't saved is still shown. */
+  private save(messages: ChatMessage[]) {
+    this.forget(
+      prisma.chatMessage.createMany({
+        data: messages.map(({ id, source, time, ...data }) => ({ id, userId: this.userId, source, time: new Date(time), data })),
+        skipDuplicates: true,
+      }),
+    );
+  }
+
+  /** Runs a database write without waiting on it, logging it if it fails. */
+  private forget(write: Promise<unknown>) {
+    write.catch((error: unknown) => console.error(error));
   }
 
   private endYouTube(id: string) {
