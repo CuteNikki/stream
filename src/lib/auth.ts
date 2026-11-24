@@ -12,7 +12,7 @@ import { after } from 'next/server';
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, PASSWORD_RESET_TOKEN_EXPIRATION, SESSION_EXPIRATION } from '@/constants/auth';
 import { sendEmailChangeConfirmation, sendPasswordResetEmail, sendTwoFactorCode, sendVerificationEmail } from '@/lib/email';
 import prisma from '@/lib/prisma';
-import { PLATFORMS, type PlatformId } from '@/lib/providers';
+import { PLATFORM_SCOPES, PLATFORMS, type PlatformId } from '@/lib/providers';
 import { siteURL } from '@/lib/site-url';
 
 /**
@@ -41,14 +41,14 @@ function credentials(id: PlatformId) {
 /** Platforms with credentials set, so they can be connected. */
 export const enabledPlatforms: PlatformId[] = PLATFORMS.map((platform) => platform.id).filter((id) => credentials(id));
 
-// What each platform lets Stream do, asked for when it's connected: changing
-// the stream's title and the rest. Google only hands out a refresh token,
-// which keeps it connected past an hour, when asked for offline access, and
-// only the first time unless it's asked to show its consent screen again.
+// What each platform is asked for when it's connected (see PLATFORM_SCOPES).
+// Google only hands out a refresh token, which keeps it connected past an
+// hour, when asked for offline access, and only the first time unless it's
+// asked to show its consent screen again.
 const platformOptions = {
-  twitch: { scope: ['channel:manage:broadcast'] },
+  twitch: { scope: PLATFORM_SCOPES.twitch },
   google: {
-    scope: ['https://www.googleapis.com/auth/youtube.force-ssl'],
+    scope: PLATFORM_SCOPES.google,
     accessType: 'offline',
     prompt: 'select_account consent',
   },

@@ -14,7 +14,7 @@ export const metadata: Metadata = platformsMetadata;
 export default async function PlatformsPage({ searchParams }: PageProps<'/platforms'>) {
   const { user } = await requireUser();
   const { error } = await searchParams;
-  const accounts = await prisma.account.findMany({ where: { userId: user.id }, select: { id: true, providerId: true } });
+  const accounts = await prisma.account.findMany({ where: { userId: user.id }, select: { id: true, providerId: true, scope: true } });
 
   return (
     <PageShell

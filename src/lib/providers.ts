@@ -12,6 +12,21 @@ export const PLATFORMS = [
 
 export type PlatformId = (typeof PLATFORMS)[number]['id'];
 
+/** What each platform lets Stream do, asked for when it's connected: set the stream's details, and read and write its chat. */
+export const PLATFORM_SCOPES: Record<PlatformId, string[]> = {
+  twitch: ['channel:manage:broadcast', 'user:read:chat', 'user:write:chat'],
+  google: ['https://www.googleapis.com/auth/youtube.force-ssl'],
+};
+
+/**
+ * Whether a connected account was given everything Stream asks for now. One connected before Stream asked for more,
+ * like Twitch's chat, needs connecting again, which adds the rest.
+ */
+export function hasAllScopes(platform: string, scope: string | null) {
+  const granted = new Set((scope ?? '').split(',').map((part) => part.trim()));
+  return !(platform in PLATFORM_SCOPES) || PLATFORM_SCOPES[platform as PlatformId].every((needed) => granted.has(needed));
+}
+
 export function providerLabel(id: string) {
   return PLATFORMS.find((platform) => platform.id === id)?.label ?? id;
 }

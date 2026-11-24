@@ -69,8 +69,10 @@ turned on, and its OAuth consent screen set up, with yourself added as a test
 user while it's in testing.
 
 Then connect each one on the Platforms page. Stream asks Twitch for
-`channel:manage:broadcast`, and Google for `youtube.force-ssl`: what they need
-to change your stream, and nothing else.
+`channel:manage:broadcast`, `user:read:chat` and `user:write:chat`, and Google
+for `youtube.force-ssl`: what they need to change your stream and to read and
+write its chat, and nothing else. A platform connected before Stream asked for
+more shows Reconnect there, which adds the rest.
 
 ## Working on it
 

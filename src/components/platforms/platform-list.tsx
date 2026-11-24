@@ -1,12 +1,12 @@
 'use client';
 
-import { Loader2Icon, LinkIcon, UnlinkIcon } from 'lucide-react';
+import { Loader2Icon, LinkIcon, RefreshCwIcon, UnlinkIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { authClient, recentSignInMessage } from '@/lib/auth-client';
-import { PLATFORMS, providerLabel, socialErrorMessage, type PlatformId } from '@/lib/providers';
+import { hasAllScopes, PLATFORMS, providerLabel, socialErrorMessage, type PlatformId } from '@/lib/providers';
 
 import { useConfirm } from '@/components/common/confirm-dialog';
 import { ProviderIcon } from '@/components/common/provider-icon';
@@ -26,8 +26,8 @@ export function PlatformList({
 }: {
   /** Platforms set up on this site, with their client id and secret. */
   platforms: PlatformId[];
-  /** What's connected to this account, as well as `credential`, the password. */
-  accounts: { id: string; providerId: string }[];
+  /** What's connected to this account, as well as `credential`, the password, with what each was allowed. */
+  accounts: { id: string; providerId: string; scope: string | null }[];
   /** Set by Better Auth when connecting fails and it redirects back here. */
   error?: string;
 }) {
@@ -56,7 +56,7 @@ export function PlatformList({
     }
   }
 
-  async function disconnect(account: { id: string; providerId: string }) {
+  async function disconnect(account: { id: string; providerId: string; scope: string | null }) {
     const label = providerLabel(account.providerId);
     const confirmed = await ask({
       title: `Disconnect ${label}?`,
@@ -66,7 +66,7 @@ export function PlatformList({
     });
     if (!confirmed) return;
 
-    setPending(account.providerId);
+    setPending(`${account.providerId}:disconnect`);
     const { error } = await authClient.unlinkAccount({ accountId: account.id });
     setPending(null);
 
@@ -103,12 +103,25 @@ export function PlatformList({
               ) : (
                 <LinkIcon className='text-primary size-5 shrink-0' aria-hidden='true' />
               )}
-              <span className='flex-1 font-medium'>{label}</span>
+              <span className='flex min-w-0 flex-1 flex-col'>
+                <span className='font-medium'>{label}</span>
+                {account && !hasAllScopes(provider, account.scope) && (
+                  <span className='text-muted-foreground text-sm'>Connect it again to let Stream use its chat too.</span>
+                )}
+              </span>
               {account ? (
-                <Button variant='destructive' size='sm' disabled={pending !== null} onClick={() => disconnect(account)}>
-                  {pending === provider ? <Loader2Icon className='animate-spin' aria-hidden='true' /> : <UnlinkIcon aria-hidden='true' />}
-                  Disconnect
-                </Button>
+                <span className='flex flex-wrap justify-end gap-2'>
+                  {!hasAllScopes(provider, account.scope) && (
+                    <Button size='sm' variant='outline' disabled={pending !== null} onClick={() => connect(provider)}>
+                      {pending === provider ? <Loader2Icon className='animate-spin' aria-hidden='true' /> : <RefreshCwIcon aria-hidden='true' />}
+                      Reconnect
+                    </Button>
+                  )}
+                  <Button variant='destructive' size='sm' disabled={pending !== null} onClick={() => disconnect(account)}>
+                    {pending === `${provider}:disconnect` ? <Loader2Icon className='animate-spin' aria-hidden='true' /> : <UnlinkIcon aria-hidden='true' />}
+                    Disconnect
+                  </Button>
+                </span>
               ) : (
                 <Button size='sm' variant='outline' disabled={pending !== null} onClick={() => connect(provider)}>
                   {pending === provider ? <Loader2Icon className='animate-spin' aria-hidden='true' /> : <LinkIcon aria-hidden='true' />}
