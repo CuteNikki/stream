@@ -15,7 +15,7 @@ async function twitchAccount(userId: string) {
 }
 
 /** Calls Helix as the connected account. */
-async function helix<T>(account: { id: string; providerId: string }, path: string, init?: RequestInit): Promise<T | null> {
+export async function helix<T>(account: { id: string; userId: string; providerId: string }, path: string, init?: RequestInit): Promise<T | null> {
   const response = await fetch(`https://api.twitch.tv/helix/${path}`, {
     ...init,
     headers: { Authorization: `Bearer ${await accessToken(account)}`, 'Client-Id': process.env.TWITCH_CLIENT_ID!, 'Content-Type': 'application/json' },

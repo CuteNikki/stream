@@ -4,7 +4,7 @@ import { LANGUAGES, MAX_YOUTUBE_TITLE_LENGTH, YOUTUBE_CATEGORIES, YOUTUBE_VISIBI
 import { accessToken, PlatformError, platformAccount, reconnect } from '@/lib/platform';
 import { tagSchema, type StreamDetails } from '@/lib/schemas';
 
-type Account = { id: string; providerId: string };
+type Account = { id: string; userId: string; providerId: string };
 
 type Broadcast = {
   id: string;

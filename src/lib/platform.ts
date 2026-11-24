@@ -1,7 +1,5 @@
 import 'server-only';
 
-import { headers } from 'next/headers';
-
 import { auth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { providerLabel, type PlatformId } from '@/lib/providers';
@@ -9,15 +7,21 @@ import { providerLabel, type PlatformId } from '@/lib/providers';
 /** Something a platform turned away, with a message fit to show. */
 export class PlatformError extends Error {}
 
-/** A connected platform's account: its row, for its token, and its id there. */
+/** A connected platform's account: its row, for its token, its owner, and its id there. */
 export async function platformAccount(userId: string, platform: PlatformId) {
-  return prisma.account.findFirst({ where: { userId, providerId: platform }, select: { id: true, accountId: true, providerId: true } });
+  return prisma.account.findFirst({
+    where: { userId, providerId: platform },
+    select: { id: true, userId: true, accountId: true, providerId: true, scope: true },
+  });
 }
 
-/** The account's access token, refreshed first if it has run out. */
-export async function accessToken(account: { id: string; providerId: string }) {
+/**
+ * The account's access token, refreshed first if it has run out. Asked for by its owner's id rather than the
+ * request's session, so the chat can keep its connections going with no request around them.
+ */
+export async function accessToken(account: { id: string; userId: string; providerId: string }) {
   try {
-    const { accessToken } = await auth.api.getAccessToken({ body: { accountId: account.id }, headers: await headers() });
+    const { accessToken } = await auth.api.getAccessToken({ body: { accountId: account.id, userId: account.userId } });
     return accessToken;
   } catch (error) {
     console.error(error);
