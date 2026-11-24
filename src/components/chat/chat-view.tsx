@@ -40,8 +40,14 @@ export function ChatView({ initialView }: { initialView?: string }) {
       if (event.type === 'sources') setSources(event.sources);
       else if (event.type === 'messages')
         setMessages((current) => {
+          // Each once, also within a batch
           const known = new Set(current.map((existing) => existing.id));
-          return [...current, ...event.messages.filter((added) => !known.has(added.id))].slice(-KEPT);
+          const added = event.messages.filter((message) => {
+            if (known.has(message.id)) return false;
+            known.add(message.id);
+            return true;
+          });
+          return [...current, ...added].slice(-KEPT);
         });
       else if (event.type === 'deleted') setMessages((current) => current.filter((existing) => !event.ids.includes(existing.id)));
       else setMessages((current) => current.filter((existing) => existing.source !== event.source));

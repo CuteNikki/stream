@@ -74,7 +74,11 @@ class ChatHub {
 
   private sink(id: string): ChatSink {
     return {
-      messages: (messages) => {
+      messages: (incoming) => {
+        // YouTube sends its recent chat again on each connect, which can already be here, loaded from the database
+        const known = new Set(this.backlog.map((message) => message.id));
+        const messages = incoming.filter((message) => !known.has(message.id));
+        if (!messages.length) return;
         this.backlog = [...this.backlog, ...messages].slice(-BACKLOG);
         this.emit({ type: 'messages', messages });
         this.save(messages);
