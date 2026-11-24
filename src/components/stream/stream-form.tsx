@@ -22,9 +22,9 @@ import { streamSchema, type StreamDetails } from '@/lib/schemas';
 import type { YouTubeBroadcast } from '@/lib/youtube';
 
 import { ProviderIcon } from '@/components/common/provider-icon';
+import { BroadcastPicker } from '@/components/stream/broadcast-picker';
 import { CategoryPicker } from '@/components/stream/category-picker';
 import { TagInput } from '@/components/stream/tag-input';
-import { ThumbnailUpload } from '@/components/stream/thumbnail-upload';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -65,12 +65,6 @@ function FormSection({
   );
 }
 
-/** Where a save lands on YouTube, which is a broadcast and not the channel. */
-function YouTubeTarget({ broadcast }: { broadcast: YouTubeBroadcast | null }) {
-  if (!broadcast) return <span className='text-destructive font-normal'>No stream coming up</span>;
-  return <span className='text-muted-foreground font-normal'>{broadcast.live ? 'The live stream' : 'The next stream'}</span>;
-}
-
 /** The stream's details, saved to every platform listed. */
 export function StreamForm({
   details,
@@ -82,8 +76,8 @@ export function StreamForm({
   /** Whether Twitch labels the category mature, which only the category changes. */
   matureGame: boolean;
   platforms: PlatformId[];
-  /** The broadcast a save sets on YouTube, if YouTube's connected. */
-  youtube?: { broadcast: YouTubeBroadcast | null };
+  /** The broadcasts a save can go to on YouTube, if YouTube's connected. */
+  youtube?: { broadcasts: YouTubeBroadcast[] };
 }) {
   const [isSaving, setIsSaving] = useState(false);
   // A language Twitch has that the list doesn't still shows, by its code, rather than an empty box.
@@ -250,8 +244,30 @@ export function StreamForm({
             />
           </FormSection>
         )}
-        {details.youtube && (
-          <FormSection id='youtube' title='YouTube' platforms={['google']} note={youtube && <YouTubeTarget broadcast={youtube.broadcast} />}>
+        {youtube && !youtube.broadcasts.length && (
+          <FormSection id='youtube' title='YouTube' platforms={['google']} note={<span className='text-destructive font-normal'>No stream coming up</span>}>
+            <p className='text-muted-foreground text-sm'>Open Go live in YouTube Studio once, and it makes one for Stream to set.</p>
+          </FormSection>
+        )}
+        {details.youtube && youtube && (
+          <FormSection id='youtube' title='YouTube' platforms={['google']}>
+            <FormField
+              control={form.control}
+              name='youtube.broadcasts'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel asChild>
+                    <span>Streams</span>
+                  </FormLabel>
+                  <FormDescription>
+                    Saving sets every ticked one. The fields show the first ticked one as it was when the page loaded. A thumbnail goes on as soon as it&apos;s
+                    picked: a JPG or PNG of up to 2 MB, 1280x720 for the sharpest.
+                  </FormDescription>
+                  <BroadcastPicker broadcasts={youtube.broadcasts} value={field.value ?? []} onChange={field.onChange} />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name='youtube.category'
@@ -333,12 +349,6 @@ export function StreamForm({
                 </FormItem>
               )}
             />
-            {youtube?.broadcast && (
-              <div className='flex flex-col gap-2'>
-                <p className='text-sm font-medium'>Thumbnail</p>
-                <ThumbnailUpload thumbnail={youtube.broadcast.thumbnail} />
-              </div>
-            )}
           </FormSection>
         )}
         <div className='border-foreground/10 flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between'>

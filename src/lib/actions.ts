@@ -125,17 +125,19 @@ export async function updateStream(unsafeData: StreamDetails): Promise<{ results
   return { results };
 }
 
-/** Puts a new thumbnail on the YouTube stream, straight away rather than with the rest. */
+/** Puts a new thumbnail on one of the YouTube streams, straight away rather than with the rest. */
 export async function uploadThumbnail(data: FormData): Promise<{ thumbnail: string | null } | { message: string }> {
   const session = await getSession();
   if (!session) return { message: 'You are not signed in.' };
 
   const image = data.get('thumbnail');
+  const broadcast = data.get('broadcast');
+  if (typeof broadcast !== 'string' || !broadcast) return { message: 'Pick the stream the thumbnail is for.' };
   if (!(image instanceof File) || !THUMBNAIL_TYPES.includes(image.type)) return { message: 'Thumbnails have to be a JPG or PNG.' };
   if (image.size > MAX_THUMBNAIL_SIZE) return { message: 'Thumbnails can be at most 2 MB.' };
 
   try {
-    return { thumbnail: await setYouTubeThumbnail(session.user.id, image) };
+    return { thumbnail: await setYouTubeThumbnail(session.user.id, broadcast, image) };
   } catch (error) {
     if (error instanceof PlatformError) return { message: error.message };
     console.error(error);

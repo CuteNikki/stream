@@ -8,7 +8,7 @@ type Account = { id: string; providerId: string };
 
 type Broadcast = {
   id: string;
-  snippet: { title: string; scheduledStartTime?: string };
+  snippet: { title: string; scheduledStartTime?: string; actualStartTime?: string; thumbnails: Thumbnails; liveChatId?: string };
   contentDetails: { boundStreamId?: string };
 };
 
@@ -35,8 +35,17 @@ type Video = {
   paidProductPlacementDetails?: { hasPaidProductPlacement: boolean };
 };
 
-/** The broadcast Stream sets, as shown with the form. */
-export type YouTubeBroadcast = { title: string; live: boolean; thumbnail: string | null };
+/** A broadcast a save can go to, as listed with the form. */
+export type YouTubeBroadcast = {
+  id: string;
+  title: string;
+  live: boolean;
+  /** When it went live, or when it's set to. */
+  start: string | null;
+  thumbnail: string | null;
+  /** The stream key it's bound to, whose name tells a stream and its vertical copy apart. */
+  streamKey: { id: string; name: string } | null;
+};
 
 /** Calls the YouTube Data API as the connected account; uploads go to its own address, given whole. */
 async function youtube<T>(account: Account, path: string, init?: RequestInit): Promise<T> {
@@ -58,21 +67,51 @@ async function youtube<T>(account: Account, path: string, init?: RequestInit): P
 }
 
 /**
- * The broadcast Stream sets: the one that's live, or else the next one coming. Among those, the one bound to a
- * stream key first, as that's where going live in OBS lands; then the soonest.
+ * Every broadcast that's live or coming up: live ones first, then those bound to a stream key, as that's where
+ * going live in OBS lands, then the soonest. Each says which stream key it's on, so the relay's vertical copy,
+ * live beside the stream on its own key, can be told apart.
  */
-async function currentBroadcast(account: Account) {
+async function listBroadcasts(account: Account): Promise<YouTubeBroadcast[]> {
   const list = (status: string) =>
     youtube<{ items: Broadcast[] }>(account, `liveBroadcasts?part=snippet,contentDetails&broadcastStatus=${status}&maxResults=50`);
   const [active, upcoming] = await Promise.all([list('active'), list('upcoming')]);
-  if (active.items[0]) return { broadcast: active.items[0], live: true };
+  const broadcasts = [
+    ...active.items.map((broadcast) => ({ broadcast, live: true })),
+    ...upcoming.items
+      .toSorted(
+        (a, b) =>
+          Number(!a.contentDetails.boundStreamId) - Number(!b.contentDetails.boundStreamId) ||
+          (a.snippet.scheduledStartTime ?? '').localeCompare(b.snippet.scheduledStartTime ?? ''),
+      )
+      .map((broadcast) => ({ broadcast, live: false })),
+  ];
 
-  const next = upcoming.items.toSorted(
-    (a, b) =>
-      Number(!a.contentDetails.boundStreamId) - Number(!b.contentDetails.boundStreamId) ||
-      (a.snippet.scheduledStartTime ?? '').localeCompare(b.snippet.scheduledStartTime ?? ''),
-  )[0];
-  return next ? { broadcast: next, live: false } : null;
+  const streamIds = [...new Set(broadcasts.map(({ broadcast }) => broadcast.contentDetails.boundStreamId).filter((id) => id !== undefined))];
+  const streams = streamIds.length
+    ? (await youtube<{ items: { id: string; snippet: { title: string } }[] }>(account, `liveStreams?part=snippet&id=${streamIds.join(',')}&maxResults=50`))
+        .items
+    : [];
+  const keys = new Map(streams.map((stream) => [stream.id, { id: stream.id, name: stream.snippet.title }]));
+
+  return broadcasts.map(({ broadcast, live }) => ({
+    id: broadcast.id,
+    title: broadcast.snippet.title,
+    live,
+    start: (live ? broadcast.snippet.actualStartTime : broadcast.snippet.scheduledStartTime) ?? null,
+    thumbnail: thumbnail(broadcast.snippet.thumbnails),
+    streamKey: keys.get(broadcast.contentDetails.boundStreamId ?? '') ?? null,
+  }));
+}
+
+/**
+ * The broadcasts a save goes to unless others are ticked: on each stream key the live one, or else the next one
+ * coming, so a stream and its vertical copy are both set. Without any bound to a key, the first one listed.
+ */
+function defaultBroadcasts(broadcasts: YouTubeBroadcast[]) {
+  const keys = new Set(broadcasts.flatMap((broadcast) => (broadcast.streamKey ? [broadcast.streamKey.id] : [])));
+  // Listed live first, then soonest, so the first on each key is the one
+  const picked = [...keys].map((key) => broadcasts.find((broadcast) => broadcast.streamKey?.id === key)!);
+  return (picked.length ? picked : broadcasts.slice(0, 1)).map((broadcast) => broadcast.id);
 }
 
 async function video(account: Account, id: string) {
@@ -86,39 +125,43 @@ function thumbnail(thumbnails: Thumbnails) {
   return (thumbnails.maxres ?? thumbnails.medium ?? thumbnails.default)?.url ?? null;
 }
 
-async function requireBroadcast(userId: string) {
+/** The account, once the broadcast is checked to be one of its own that's live or coming up. */
+async function requireBroadcast(userId: string, id: string) {
   const account = await platformAccount(userId, 'google');
   if (!account) throw new PlatformError('YouTube is no longer connected.');
 
-  const current = await currentBroadcast(account);
-  if (!current) throw new PlatformError("There's no stream coming up on YouTube to set. Open Go live in YouTube Studio once, and it makes one.");
-  return { account, id: current.broadcast.id };
+  const broadcasts = await listBroadcasts(account);
+  if (!broadcasts.some((broadcast) => broadcast.id === id))
+    throw new PlatformError("That YouTube stream has ended or was removed. Reload the page to see what's there now.");
+  return account;
 }
 
 /**
- * The broadcast Stream would set and what it's set to, or null if YouTube isn't connected. Without a broadcast,
- * there's nothing to read or set.
+ * The broadcasts Stream can set and what the first one ticked is set to, or null if YouTube isn't connected.
+ * Without a broadcast, there's nothing to read or set.
  */
 export async function getYouTubeStream(
   userId: string,
-): Promise<{ broadcast: YouTubeBroadcast; details: Omit<StreamDetails, 'category' | 'labels'> } | { broadcast: null } | null> {
+): Promise<{ broadcasts: YouTubeBroadcast[]; details: Omit<StreamDetails, 'category' | 'labels'> | null } | null> {
   const account = await platformAccount(userId, 'google');
   if (!account) return null;
 
-  const current = await currentBroadcast(account);
-  if (!current) return { broadcast: null };
+  const broadcasts = await listBroadcasts(account);
+  if (!broadcasts.length) return { broadcasts, details: null };
 
-  const { snippet, status, paidProductPlacementDetails } = await video(account, current.broadcast.id);
+  const ticked = defaultBroadcasts(broadcasts);
+  const { snippet, status, paidProductPlacementDetails } = await video(account, ticked[0]);
   // YouTube's languages can be regional (en-GB) and its tags can have spaces, which Twitch's can't.
   const language = snippet.defaultAudioLanguage?.split('-')[0].toLowerCase();
   return {
-    broadcast: { title: current.broadcast.snippet.title, live: current.live, thumbnail: thumbnail(snippet.thumbnails) },
+    broadcasts,
     details: {
       title: snippet.title,
       tags: (snippet.tags ?? []).filter((tag) => tagSchema.safeParse(tag).success),
       language: LANGUAGES.some((known) => known.code === language) ? language! : 'other',
       brandedContent: paidProductPlacementDetails?.hasPaidProductPlacement ?? false,
       youtube: {
+        broadcasts: ticked,
         category: YOUTUBE_CATEGORIES.find((category) => category.id === snippet.categoryId)?.id ?? '20',
         description: snippet.description,
         visibility: YOUTUBE_VISIBILITIES.find((visibility) => visibility.id === status.privacyStatus)?.id ?? 'public',
@@ -129,14 +172,43 @@ export async function getYouTubeStream(
 }
 
 /**
- * Sets the broadcast's details. YouTube clears what an update leaves out, so whatever Stream doesn't change, like
- * the title's language, is sent back as it was; so are the YouTube-only fields when they weren't in the form.
+ * Sets the ticked broadcasts' details, each on its own so one failing doesn't stop the rest. Without the
+ * YouTube-only fields, as when YouTube couldn't be read, it's the broadcasts Stream would tick itself.
  */
 export async function updateYouTubeStream(userId: string, details: StreamDetails) {
   if (details.title.length > MAX_YOUTUBE_TITLE_LENGTH) throw new PlatformError(`YouTube titles can be at most ${MAX_YOUTUBE_TITLE_LENGTH} characters.`);
   if (/[<>]/.test(details.title)) throw new PlatformError("YouTube titles can't have < or >.");
 
-  const { account, id } = await requireBroadcast(userId);
+  const account = await platformAccount(userId, 'google');
+  if (!account) throw new PlatformError('YouTube is no longer connected.');
+  const listed = await listBroadcasts(account);
+  if (!listed.length) throw new PlatformError("There's no stream coming up on YouTube to set. Open Go live in YouTube Studio once, and it makes one.");
+
+  const ids = details.youtube?.broadcasts ?? defaultBroadcasts(listed);
+  const broadcasts = listed.filter((broadcast) => ids.includes(broadcast.id));
+  if (!broadcasts.length) throw new PlatformError("Those YouTube streams have ended or were removed. Reload the page to see what's there now.");
+
+  const results = await Promise.allSettled(broadcasts.map((broadcast) => updateBroadcast(account, broadcast.id, details)));
+  const failed = results.flatMap((result, index) => (result.status === 'rejected' ? [{ broadcast: broadcasts[index], error: result.reason as unknown }] : []));
+  if (!failed.length) return;
+
+  const unexpected = failed.find(({ error }) => !(error instanceof PlatformError));
+  if (unexpected) throw unexpected.error;
+  // Named only when there are several, so it's clear which didn't take it
+  const named = broadcasts.length > 1;
+  throw new PlatformError(failed.map(({ broadcast, error }) => `${named ? `${broadcastName(broadcast)}: ` : ''}${(error as Error).message}`).join(' '));
+}
+
+/** How a broadcast is told apart in a message: by its stream key, else its title. */
+function broadcastName(broadcast: YouTubeBroadcast) {
+  return `"${broadcast.streamKey?.name ?? broadcast.title}"`;
+}
+
+/**
+ * Sets one broadcast's details. YouTube clears what an update leaves out, so whatever Stream doesn't change, like
+ * the title's language, is sent back as it was; so are the YouTube-only fields when they weren't in the form.
+ */
+async function updateBroadcast(account: Account, id: string, details: StreamDetails) {
   const { snippet, status, paidProductPlacementDetails } = await video(account, id);
   await youtube(account, 'videos?part=snippet', {
     method: 'PUT',
@@ -179,10 +251,10 @@ export async function updateYouTubeStream(userId: string, details: StreamDetails
   }
 }
 
-/** Puts a new thumbnail on the broadcast, and gives back its address. */
-export async function setYouTubeThumbnail(userId: string, image: File) {
-  const { account, id } = await requireBroadcast(userId);
-  const { items } = await youtube<{ items: Thumbnails[] }>(account, `https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${id}`, {
+/** Puts a new thumbnail on one of the broadcasts, and gives back its address. */
+export async function setYouTubeThumbnail(userId: string, broadcastId: string, image: File) {
+  const account = await requireBroadcast(userId, broadcastId);
+  const { items } = await youtube<{ items: Thumbnails[] }>(account, `https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${broadcastId}`, {
     method: 'POST',
     headers: { 'Content-Type': image.type },
     body: image,

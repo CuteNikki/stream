@@ -51,10 +51,9 @@ export default async function StreamPage() {
 
   const [twitch, youtube] = await Promise.all([settle(getTwitchChannel(user.id)), settle(getYouTubeStream(user.id))]);
   const problems = [twitch.problem, youtube.problem].filter((problem) => problem !== undefined);
-  const youtubeStream = youtube.value && youtube.value.broadcast ? youtube.value : null;
   // Twitch's where both have it, as it has more of them; YouTube's own fields are YouTube's.
-  const details: StreamDetails = { ...EMPTY, ...youtubeStream?.details, ...twitch.value?.details };
-  const source = twitch.value ? 'Twitch' : youtubeStream ? 'YouTube' : null;
+  const details: StreamDetails = { ...EMPTY, ...youtube.value?.details, ...twitch.value?.details };
+  const source = twitch.value ? 'Twitch' : youtube.value?.details ? 'YouTube' : null;
 
   return (
     <StreamShell>
@@ -78,7 +77,7 @@ export default async function StreamPage() {
           details={details}
           matureGame={twitch.value?.matureGame ?? false}
           platforms={platforms}
-          youtube={youtube.value ? { broadcast: youtube.value.broadcast } : undefined}
+          youtube={youtube.value ? { broadcasts: youtube.value.broadcasts } : undefined}
         />
       </SettingsSection>
     </StreamShell>

@@ -71,6 +71,8 @@ export const streamSchema = z.object({
   // Only sent once they've been read from YouTube, so a YouTube that couldn't be read is never set to blanks.
   youtube: z
     .object({
+      // The broadcasts a save goes to, by id: say the stream and its vertical copy, live at once
+      broadcasts: z.array(z.string().min(1).max(64)).min(1, 'Tick at least one YouTube stream.').max(50),
       // Its own, as YouTube's are broad and don't follow Twitch's games
       category: z.enum(YOUTUBE_CATEGORIES.map((category) => category.id)),
       description: z
