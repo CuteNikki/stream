@@ -45,10 +45,12 @@ export type YouTubeBroadcast = {
   thumbnail: string | null;
   /** The stream key it's bound to, whose name tells a stream and its vertical copy apart. */
   streamKey: { id: string; name: string } | null;
+  /** Its chat, which each broadcast has its own of; none where chat is off. */
+  liveChatId: string | null;
 };
 
 /** Calls the YouTube Data API as the connected account; uploads go to its own address, given whole. */
-async function youtube<T>(account: Account, path: string, init?: RequestInit): Promise<T> {
+export async function youtube<T>(account: Account, path: string, init?: RequestInit): Promise<T> {
   const url = path.startsWith('https://') ? path : `https://www.googleapis.com/youtube/v3/${path}`;
   const response = await fetch(url, {
     ...init,
@@ -71,10 +73,11 @@ async function youtube<T>(account: Account, path: string, init?: RequestInit): P
  * going live in OBS lands, then the soonest. Each says which stream key it's on, so the relay's vertical copy,
  * live beside the stream on its own key, can be told apart.
  */
-async function listBroadcasts(account: Account): Promise<YouTubeBroadcast[]> {
+export async function listBroadcasts(account: Account, { upcoming: withUpcoming = true } = {}): Promise<YouTubeBroadcast[]> {
   const list = (status: string) =>
     youtube<{ items: Broadcast[] }>(account, `liveBroadcasts?part=snippet,contentDetails&broadcastStatus=${status}&maxResults=50`);
-  const [active, upcoming] = await Promise.all([list('active'), list('upcoming')]);
+  // Only the live ones when that's all that's wanted, as each list costs quota
+  const [active, upcoming] = await Promise.all([list('active'), withUpcoming ? list('upcoming') : { items: [] }]);
   const broadcasts = [
     ...active.items.map((broadcast) => ({ broadcast, live: true })),
     ...upcoming.items
@@ -100,6 +103,7 @@ async function listBroadcasts(account: Account): Promise<YouTubeBroadcast[]> {
     start: (live ? broadcast.snippet.actualStartTime : broadcast.snippet.scheduledStartTime) ?? null,
     thumbnail: thumbnail(broadcast.snippet.thumbnails),
     streamKey: keys.get(broadcast.contentDetails.boundStreamId ?? '') ?? null,
+    liveChatId: broadcast.snippet.liveChatId ?? null,
   }));
 }
 
