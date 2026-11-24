@@ -34,7 +34,7 @@ export default async function ChatPage() {
 
 function ChatShell({ children }: { children: React.ReactNode }) {
   return (
-    <PageShell eyebrow='Your chat' title='Chat' description="Every platform's chat as it happens, one at a time or all together." fill>
+    <PageShell eyebrow='Your chat' title='Chat' description="Every platform's chat as it happens: together, side by side, or one at a time." fill>
       {children}
     </PageShell>
   );
