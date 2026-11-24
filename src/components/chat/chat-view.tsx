@@ -22,12 +22,13 @@ const SIDE_BY_SIDE = 'side-by-side';
  * Every chat, live: all of them in one feed, where each message says where it came from; side by side, a column
  * each; or one at a time from the tabs. Below it, a message goes to every chat or the one picked.
  */
-export function ChatView() {
+export function ChatView({ initialView }: { initialView?: string }) {
   const [sources, setSources] = useState<ChatSource[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [online, setOnline] = useState(true);
-  const [tab, setTab] = useState(ALL);
-  const [target, setTarget] = useState(EVERY_CHAT);
+  // From ?view=, so a reload keeps it: side-by-side, or a chat's id; All is the page without it
+  const [tab, setTab] = useState(initialView ?? ALL);
+  const [target, setTarget] = useState(!initialView || initialView === SIDE_BY_SIDE ? EVERY_CHAT : initialView);
 
   useEffect(() => {
     const events = new EventSource('/api/chat');
@@ -54,6 +55,11 @@ export function ChatView() {
   function pickTab(id: string) {
     setTab(id);
     setTarget(id === ALL || id === SIDE_BY_SIDE ? EVERY_CHAT : id);
+    // Into the address without a navigation, which Next.js keeps in step with
+    const url = new URL(window.location.href);
+    if (id === ALL) url.searchParams.delete('view');
+    else url.searchParams.set('view', id);
+    window.history.replaceState(null, '', url);
   }
 
   const problems = sources.filter((source) => source.state === 'problem');

@@ -11,15 +11,16 @@ import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = chatMetadata;
 
-/** Every platform's chat, live, to read one at a time or all together, and to write in. */
-export default async function ChatPage() {
+/** Every platform's chat, live, to read one at a time or all together, and to write in. ?view= keeps the view picked. */
+export default async function ChatPage({ searchParams }: PageProps<'/chat'>) {
   const { user } = await requireUser();
+  const { view } = await searchParams;
   const connected = await prisma.account.count({ where: { userId: user.id, providerId: { not: 'credential' } } });
 
   return (
     <ChatShell>
       {connected ? (
-        <ChatView />
+        <ChatView initialView={typeof view === 'string' ? view : undefined} />
       ) : (
         <div className='bg-card flex flex-col items-start gap-3 rounded-2xl border p-6'>
           <p className='text-sm'>Connect a platform first, so Stream has a chat to show.</p>
