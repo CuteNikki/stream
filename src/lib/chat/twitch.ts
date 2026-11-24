@@ -75,6 +75,7 @@ export function startTwitchChat(account: Account, sink: ChatSink): () => void {
             }
           }
           failures = 0;
+          if (!moved) console.log(`Chat Twitch: subscribed to channel ${account.accountId}`);
           sink.state('connected');
           break;
         }

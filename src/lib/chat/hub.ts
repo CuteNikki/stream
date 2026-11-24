@@ -87,6 +87,7 @@ class ChatHub {
         const connection = this.connections.get(id);
         if (!connection || (connection.source.state === state && connection.source.problem === problem)) return;
         connection.source = { ...connection.source, state, problem };
+        console.log(`Chat ${connection.source.name}: ${state}${problem ? ` (${problem})` : ''}`);
         this.emit({ type: 'sources', sources: this.sources() });
       },
     };
@@ -163,6 +164,8 @@ class ChatHub {
     }
     if (!this.running) return;
 
+    if (live.length !== [...this.connections.keys()].filter((id) => id.startsWith('youtube:')).length)
+      console.log(`Chat: YouTube has ${live.length} live broadcast${live.length === 1 ? '' : 's'} with a chat`);
     const ids = new Set(live.map((broadcast) => youtubeSource(broadcast.id)));
     const gone = [...this.connections.keys()].filter((id) => id.startsWith('youtube:') && !ids.has(id));
     for (const id of gone) this.remove(id);
