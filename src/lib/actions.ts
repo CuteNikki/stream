@@ -8,10 +8,11 @@ import { z } from 'zod';
 
 import { MAX_THUMBNAIL_SIZE, THUMBNAIL_TYPES } from '@/constants/stream';
 import { auth, forgetTrustedDevices as forget } from '@/lib/auth';
+import { chatSourceName, sendToChat } from '@/lib/chat/send';
 import prisma from '@/lib/prisma';
 import { PlatformError } from '@/lib/platform';
 import { PLATFORMS, providerLabel, type PlatformId } from '@/lib/providers';
-import { streamSchema, updateNameSchema, type Category, type StreamDetails } from '@/lib/schemas';
+import { chatMessageSchema, streamSchema, updateNameSchema, type Category, type ChatMessageInput, type StreamDetails } from '@/lib/schemas';
 import { getSession, requireUser } from '@/lib/session';
 import { searchTwitchCategories, updateTwitchChannel } from '@/lib/twitch';
 import { setYouTubeThumbnail, updateYouTubeStream } from '@/lib/youtube';
@@ -143,6 +144,32 @@ export async function uploadThumbnail(data: FormData): Promise<{ thumbnail: stri
     console.error(error);
     return { message: 'Unable to upload the thumbnail!' };
   }
+}
+
+/** How sending went in one chat. */
+export type ChatSendResult = { source: string; ok: true } | { source: string; ok: false; message: string };
+
+/** Writes a message in each chat picked, each on its own so one failing doesn't stop the others. */
+export async function sendChatMessage(unsafeData: ChatMessageInput): Promise<{ results: ChatSendResult[] } | { message: string }> {
+  const { success, data, error } = chatMessageSchema.safeParse(unsafeData);
+  if (!success) return { message: error.issues[0]?.message ?? 'Unable to send that!' };
+
+  const session = await getSession();
+  if (!session) return { message: 'You are not signed in.' };
+
+  const results = await Promise.all(
+    data.sources.map(async (source): Promise<ChatSendResult> => {
+      try {
+        await sendToChat(session.user.id, source, data.text);
+        return { source, ok: true };
+      } catch (error) {
+        if (!(error instanceof PlatformError)) console.error(error);
+        const name = chatSourceName(session.user.id, source) ?? 'that chat';
+        return { source, ok: false, message: error instanceof PlatformError ? error.message : `Unable to send it to ${name}!` };
+      }
+    }),
+  );
+  return { results };
 }
 
 export async function setPassword(newPassword: string) {

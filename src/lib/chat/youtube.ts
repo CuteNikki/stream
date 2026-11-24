@@ -8,8 +8,6 @@ import { youtube } from '@/lib/youtube';
 
 type Account = { id: string; userId: string; providerId: string };
 
-export const MAX_YOUTUBE_MESSAGE_LENGTH = 200;
-
 type StreamAnswer = {
   items?: LiveChatMessage[];
   nextPageToken?: string;

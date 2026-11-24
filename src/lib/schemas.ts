@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { MAX_EMAIL_LENGTH, MAX_NAME_LENGTH, MAX_PASSWORD_LENGTH, MIN_EMAIL_LENGTH, MIN_NAME_LENGTH, MIN_PASSWORD_LENGTH } from '@/constants/auth';
 import {
   CONTENT_LABELS,
+  MAX_CHAT_MESSAGE_LENGTH,
   MAX_TAG_LENGTH,
   MAX_TAGS,
   MAX_TITLE_LENGTH,
@@ -85,6 +86,17 @@ export const streamSchema = z.object({
     .optional(),
 });
 
+/** A chat message, and the chats it goes to, by their source ids. Each platform's own limit is checked when it's sent. */
+export const chatMessageSchema = z.object({
+  text: z
+    .string()
+    .trim()
+    .min(1, 'Write something first.')
+    .max(MAX_CHAT_MESSAGE_LENGTH.twitch, `Messages can be at most ${MAX_CHAT_MESSAGE_LENGTH.twitch} characters.`),
+  sources: z.array(z.string().min(1).max(100)).min(1, 'Pick a chat to send it to.').max(20),
+});
+
+export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
 export type StreamDetails = z.infer<typeof streamSchema>;
 export type YouTubeDetails = NonNullable<StreamDetails['youtube']>;
 export type Category = NonNullable<StreamDetails['category']>;

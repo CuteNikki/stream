@@ -150,7 +150,7 @@ class ChatHub {
 
 // Kept on globalThis, so the dev server's reloads don't leave a second set of connections running
 const globalHubs = globalThis as unknown as { streamChatHubs?: Map<string, ChatHub> };
-const hubs = (globalHubs.streamChatHubs ??= new Map());
+const hubs = (globalHubs.streamChatHubs ??= new Map<string, ChatHub>());
 
 /** The account's chats, made the first time they're asked for. */
 export function chatHub(userId: string) {

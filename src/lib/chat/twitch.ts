@@ -15,8 +15,6 @@ export type ChatSink = {
   state: (state: 'connecting' | 'connected' | 'problem', problem?: string) => void;
 };
 
-export const MAX_TWITCH_MESSAGE_LENGTH = 500;
-
 const EVENTSUB_URL = 'wss://eventsub.wss.twitch.tv/ws?keepalive_timeout_seconds=30';
 const SUBSCRIPTIONS = ['channel.chat.message', 'channel.chat.message_delete', 'channel.chat.clear'];
 
