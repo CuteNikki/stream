@@ -10,12 +10,20 @@ import { listBroadcasts } from '@/lib/youtube';
 
 /** Messages kept for a chat page opened later, so it doesn't start empty. */
 const BACKLOG = 300;
-/** How often YouTube is asked for broadcasts that went live or ended, while the chat's open. */
-const YOUTUBE_CHECK_MS = 2 * 60_000;
+/** How often the platforms are checked again while the chat's open: YouTube for broadcasts that went live or ended, Twitch for being connected again. */
+const CHECK_MS = 2 * 60_000;
+/** A page opened while a chat has a problem checks again at once, but not more often than this. */
+const RECHECK_MS = 10_000;
 /** How long the connections stay after the last chat page closes, so a reload doesn't start them over. */
 const IDLE_MS = 60_000;
 
-type Connection = { source: ChatSource; stop: () => void; liveChatId?: string };
+type Connection = {
+  source: ChatSource;
+  stop: () => void;
+  liveChatId?: string;
+  /** Only saying what's missing, like Twitch's chat permissions, with nothing connected. */
+  waiting?: boolean;
+};
 
 /**
  * One account's chats: each platform's connection, made once and shared by every chat page that's open, with the
@@ -25,7 +33,8 @@ class ChatHub {
   private listeners = new Set<(event: ChatEvent) => void>();
   private connections = new Map<string, Connection>();
   private backlog: ChatMessage[] = [];
-  private youtubeTimer: ReturnType<typeof setInterval> | undefined;
+  private checkTimer: ReturnType<typeof setInterval> | undefined;
+  private lastCheck = 0;
   private idleTimer: ReturnType<typeof setTimeout> | undefined;
   private running = false;
 
@@ -38,6 +47,8 @@ class ChatHub {
     listener({ type: 'sources', sources: this.sources() });
     if (this.backlog.length) listener({ type: 'messages', messages: this.backlog });
     if (!this.running) void this.start();
+    // Say Twitch was connected again since: a reload is the obvious thing to try, so it should work
+    else if (this.sources().some((source) => source.state === 'problem') && Date.now() - this.lastCheck > RECHECK_MS) void this.check();
 
     return () => {
       this.listeners.delete(listener);
@@ -81,8 +92,8 @@ class ChatHub {
     };
   }
 
-  private add(source: ChatSource, start: (sink: ChatSink) => () => void, liveChatId?: string) {
-    const connection: Connection = { source, stop: () => {}, liveChatId };
+  private add(source: ChatSource, start: (sink: ChatSink) => () => void, liveChatId?: string, waiting?: boolean) {
+    const connection: Connection = { source, stop: () => {}, liveChatId, waiting };
     this.connections.set(source.id, connection);
     connection.stop = start(this.sink(source.id));
   }
@@ -94,22 +105,48 @@ class ChatHub {
 
   private async start() {
     this.running = true;
-    const twitch = await platformAccount(this.userId, 'twitch');
-    if (twitch && this.running) {
-      const source: ChatSource = { id: TWITCH_SOURCE, platform: 'twitch', name: 'Twitch', state: 'connecting' };
-      if (hasAllScopes('twitch', twitch.scope)) this.add(source, (sink) => startTwitchChat(twitch, sink));
-      else this.add({ ...source, state: 'problem', problem: 'Connect Twitch again on the platforms page, so Stream may use its chat.' }, () => () => {});
-    }
-    this.emit({ type: 'sources', sources: this.sources() });
-
-    await this.checkYouTube();
-    this.youtubeTimer = setInterval(() => void this.checkYouTube(), YOUTUBE_CHECK_MS);
+    await this.check();
+    this.checkTimer = setInterval(() => void this.check(), CHECK_MS);
   }
 
   private stop() {
     this.running = false;
-    clearInterval(this.youtubeTimer);
+    clearInterval(this.checkTimer);
     for (const id of [...this.connections.keys()]) this.remove(id);
+  }
+
+  private async check() {
+    this.lastCheck = Date.now();
+    await this.checkTwitch();
+    await this.checkYouTube();
+  }
+
+  /**
+   * Connects Twitch's chat once it's allowed to, or says what's missing. Checked again each round, so connecting
+   * Twitch again while the chat's open takes effect, and disconnecting it ends its chat.
+   */
+  private async checkTwitch() {
+    const account = await platformAccount(this.userId, 'twitch');
+    if (!this.running) return;
+    const current = this.connections.get(TWITCH_SOURCE);
+    const allowed = !!account && hasAllScopes('twitch', account.scope);
+    // Already as it should be: connected and allowed, or waiting and still not
+    if (current && account && !!current.waiting === !allowed) return;
+    if (!current && !account) return;
+
+    if (current) this.remove(TWITCH_SOURCE);
+    if (account) {
+      const source: ChatSource = { id: TWITCH_SOURCE, platform: 'twitch', name: 'Twitch', state: 'connecting' };
+      if (allowed) this.add(source, (sink) => startTwitchChat(account, sink));
+      else
+        this.add(
+          { ...source, state: 'problem', problem: 'Connect Twitch again on the platforms page, so Stream may use its chat.' },
+          () => () => {},
+          undefined,
+          true,
+        );
+    }
+    this.emit({ type: 'sources', sources: this.sources() });
   }
 
   /** Joins the chat of each broadcast that went live, and leaves those that ended. */
