@@ -1,6 +1,7 @@
 import 'server-only';
 
-import { TWITCH_SOURCE, youtubeSource } from '@/lib/chat/messages';
+import { kickChatReachable, subscribeToKickChat } from '@/lib/chat/kick';
+import { KICK_SOURCE, TWITCH_SOURCE, youtubeSource } from '@/lib/chat/messages';
 import { startTwitchChat, type ChatSink } from '@/lib/chat/twitch';
 import type { ChatEvent, ChatMessage, ChatSource } from '@/lib/chat/types';
 import { startYouTubeChat } from '@/lib/chat/youtube';
@@ -57,6 +58,15 @@ class ChatHub {
       this.listeners.delete(listener);
       if (!this.listeners.size) this.idleTimer = setTimeout(() => this.stop(), IDLE_MS);
     };
+  }
+
+  /**
+   * Messages from Kick's webhook, which comes on its own rather than through a connection held here. Only taken
+   * while the chat is open, like the other platforms' chats.
+   */
+  receive(source: string, messages: ChatMessage[]) {
+    if (!this.running || !this.connections.has(source)) return;
+    this.sink(source).messages(messages);
   }
 
   /** A YouTube chat's id, to write in it. */
@@ -132,6 +142,7 @@ class ChatHub {
     this.forget(prisma.chatMessage.deleteMany({ where: { userId: this.userId, time: { lt: new Date(Date.now() - HISTORY_MS) } } }));
     await this.checkTwitch();
     await this.checkYouTube();
+    await this.checkKick();
   }
 
   /**
@@ -192,6 +203,35 @@ class ChatHub {
       );
     }
     if (gone.length || added.length) this.emit({ type: 'sources', sources: this.sources() });
+  }
+
+  /**
+   * Has Kick send its chat to the webhook, or says why it can't: a permission missing, or a Stream that Kick can't
+   * reach, like one on localhost. Checked again each round, like Twitch.
+   */
+  private async checkKick() {
+    const account = await platformAccount(this.userId, 'kick');
+    if (!this.running) return;
+    const current = this.connections.get(KICK_SOURCE);
+    if (!account) {
+      if (!current) return;
+      this.remove(KICK_SOURCE);
+      return this.emit({ type: 'sources', sources: this.sources() });
+    }
+
+    if (!current) this.add({ id: KICK_SOURCE, platform: 'kick', name: 'Kick', state: 'connecting' }, () => () => {});
+    const sink = this.sink(KICK_SOURCE);
+    if (!current) this.emit({ type: 'sources', sources: this.sources() });
+
+    if (!hasAllScopes('kick', account.scope)) return sink.state('problem', 'Connect Kick again on the platforms page, so Stream may use its chat.');
+    if (!kickChatReachable()) return sink.state('problem', "Kick's chat only arrives where Kick can reach Stream, on its public address, not on localhost.");
+    try {
+      await subscribeToKickChat(account);
+      sink.state('connected');
+    } catch (error) {
+      if (!(error instanceof PlatformError)) console.error(error);
+      sink.state('problem', error instanceof PlatformError ? error.message : "Kick's chat couldn't be joined.");
+    }
   }
 
   /** The messages kept from before Stream last started, as Twitch can't be asked for them. */

@@ -2,7 +2,7 @@
 
 import { describe, expect, test } from 'bun:test';
 
-import { twitchMessage, youtubeItem, youtubeSource } from '@/lib/chat/messages';
+import { kickMessage, twitchMessage, youtubeItem, youtubeSource } from '@/lib/chat/messages';
 
 describe('twitchMessage', () => {
   test('keeps text and emotes in order, with roles from badges', () => {
@@ -107,5 +107,39 @@ describe('youtubeItem', () => {
 
   test('skips what the chat has nothing to show for', () => {
     expect(youtubeItem(source, { id: 'y4', snippet: { type: 'chatEndedEvent', publishedAt: '2026-11-24T18:00:00Z' } })).toBeNull();
+  });
+});
+
+describe('kickMessage', () => {
+  test('splits emotes out of the text, with roles from badges', () => {
+    const message = kickMessage({
+      message_id: 'k1',
+      sender: {
+        username: 'Viewer',
+        identity: { username_color: '#FF5733', badges: [{ type: 'moderator' }, { type: 'sub_gifter' }, { type: 'subscriber' }, { type: 'founder' }] },
+      },
+      content: 'Hello [emote:4148074:HYPERCLAP] [emote:37226:KEKW]',
+      created_at: '2026-11-25T18:00:00Z',
+    });
+    expect(message).toEqual({
+      id: 'kick:k1',
+      source: 'kick',
+      platform: 'kick',
+      author: { name: 'Viewer', color: '#FF5733', roles: ['moderator', 'subscriber'] },
+      parts: [
+        { type: 'text', text: 'Hello ' },
+        { type: 'emote', name: 'HYPERCLAP', url: 'https://files.kick.com/emotes/4148074/fullsize' },
+        { type: 'text', text: ' ' },
+        { type: 'emote', name: 'KEKW', url: 'https://files.kick.com/emotes/37226/fullsize' },
+      ],
+      paid: null,
+      time: '2026-11-25T18:00:00Z',
+    });
+  });
+
+  test('keeps plain text whole, with no colour or badges', () => {
+    const message = kickMessage({ message_id: 'k2', sender: { username: 'Quiet', identity: null }, content: 'just text', created_at: '2026-11-25T18:00:00Z' });
+    expect(message.parts).toEqual([{ type: 'text', text: 'just text' }]);
+    expect(message.author).toEqual({ name: 'Quiet', color: null, roles: [] });
   });
 });

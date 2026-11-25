@@ -83,3 +83,51 @@ export function youtubeItem(source: string, item: LiveChatMessage): { message: C
     },
   };
 }
+
+/** Kick has one chat, the channel's, whether it's live or not. */
+export const KICK_SOURCE = 'kick';
+
+const KICK_BADGE_ROLES: Record<string, ChatRole> = {
+  broadcaster: 'owner',
+  moderator: 'moderator',
+  vip: 'vip',
+  subscriber: 'subscriber',
+  founder: 'subscriber',
+};
+
+export type KickChatEvent = {
+  message_id: string;
+  sender: { username: string; identity: { username_color: string; badges: { type: string }[] } | null };
+  content: string;
+  created_at: string;
+};
+
+/**
+ * A message as Kick's webhook sends it, the way the chat shows it. Emotes are written into its text as
+ * [emote:<id>:<name>], their pictures at Kick's own address for them.
+ */
+export function kickMessage(event: KickChatEvent): ChatMessage {
+  const parts: ChatPart[] = [];
+  let last = 0;
+  for (const match of event.content.matchAll(/\[emote:(\d+):([^\]]+)\]/g)) {
+    if (match.index > last) parts.push({ type: 'text', text: event.content.slice(last, match.index) });
+    parts.push({ type: 'emote', name: match[2], url: `https://files.kick.com/emotes/${match[1]}/fullsize` });
+    last = match.index + match[0].length;
+  }
+  if (last < event.content.length) parts.push({ type: 'text', text: event.content.slice(last) });
+
+  const badges = event.sender.identity?.badges ?? [];
+  return {
+    id: `${KICK_SOURCE}:${event.message_id}`,
+    source: KICK_SOURCE,
+    platform: 'kick',
+    author: {
+      name: event.sender.username,
+      color: event.sender.identity?.username_color || null,
+      roles: [...new Set(badges.flatMap((badge) => (KICK_BADGE_ROLES[badge.type] ? [KICK_BADGE_ROLES[badge.type]] : [])))],
+    },
+    parts,
+    paid: null,
+    time: event.created_at,
+  };
+}

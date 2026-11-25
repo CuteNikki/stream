@@ -72,7 +72,10 @@ turned on, and its OAuth consent screen set up, with yourself added as a test
 user while it's in testing.
 
 Kick has its own list of categories, so it gets its own category picker, and
-its API can't set the language or branded content.
+its API can't set the language or branded content. Kick only hands its chat to
+a webhook: turn webhooks on in the Kick app, with the URL
+`<BETTER_AUTH_URL>/api/kick/webhook`. That has to be reachable from the
+internet, so Kick's chat doesn't show while developing on localhost.
 
 Then connect each one on the Platforms page. Stream asks Twitch for
 `channel:manage:broadcast`, `user:read:chat` and `user:write:chat`, Google

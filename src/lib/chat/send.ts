@@ -2,7 +2,8 @@ import 'server-only';
 
 import { MAX_CHAT_MESSAGE_LENGTH } from '@/constants/stream';
 import { chatHub } from '@/lib/chat/hub';
-import { TWITCH_SOURCE } from '@/lib/chat/messages';
+import { sendKickMessage } from '@/lib/chat/kick';
+import { KICK_SOURCE, TWITCH_SOURCE } from '@/lib/chat/messages';
 import { sendTwitchMessage } from '@/lib/chat/twitch';
 import { sendYouTubeMessage } from '@/lib/chat/youtube';
 import { PlatformError, platformAccount } from '@/lib/platform';
@@ -14,6 +15,13 @@ export async function sendToChat(userId: string, source: string, text: string) {
     const account = await platformAccount(userId, 'twitch');
     if (!account) throw new PlatformError('Twitch is no longer connected.');
     return sendTwitchMessage(account, text);
+  }
+
+  if (source === KICK_SOURCE) {
+    if (text.length > MAX_CHAT_MESSAGE_LENGTH.kick) throw new PlatformError(`Kick takes at most ${MAX_CHAT_MESSAGE_LENGTH.kick} characters.`);
+    const account = await platformAccount(userId, 'kick');
+    if (!account) throw new PlatformError('Kick is no longer connected.');
+    return sendKickMessage(account, text);
   }
 
   const liveChatId = chatHub(userId).liveChatId(source);
