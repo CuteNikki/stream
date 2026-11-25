@@ -1,4 +1,4 @@
-import { siTwitch, siYoutube } from 'simple-icons';
+import { siKick, siTwitch, siYoutube } from 'simple-icons';
 
 import type { PlatformId } from '@/lib/providers';
 
@@ -6,6 +6,7 @@ import type { PlatformId } from '@/lib/providers';
 const icons: Record<PlatformId, { path: string; hex: string }> = {
   twitch: siTwitch,
   google: siYoutube,
+  kick: siKick,
 };
 
 /**

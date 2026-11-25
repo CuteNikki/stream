@@ -52,6 +52,7 @@ const platformOptions = {
     accessType: 'offline',
     prompt: 'select_account consent',
   },
+  kick: { scope: PLATFORM_SCOPES.kick },
 } satisfies Record<PlatformId, object>;
 
 const socialProviders = Object.fromEntries(

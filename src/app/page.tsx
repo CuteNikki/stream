@@ -7,6 +7,7 @@ import prisma from '@/lib/prisma';
 import { PLATFORMS } from '@/lib/providers';
 import type { StreamDetails } from '@/lib/schemas';
 import { requireUser } from '@/lib/session';
+import { getKickChannel } from '@/lib/kick';
 import { getTwitchChannel } from '@/lib/twitch';
 import { getYouTubeStream } from '@/lib/youtube';
 
@@ -49,11 +50,11 @@ export default async function StreamPage() {
     );
   }
 
-  const [twitch, youtube] = await Promise.all([settle(getTwitchChannel(user.id)), settle(getYouTubeStream(user.id))]);
-  const problems = [twitch.problem, youtube.problem].filter((problem) => problem !== undefined);
-  // Twitch's where both have it, as it has more of them; YouTube's own fields are YouTube's.
-  const details: StreamDetails = { ...EMPTY, ...youtube.value?.details, ...twitch.value?.details };
-  const source = twitch.value ? 'Twitch' : youtube.value?.details ? 'YouTube' : null;
+  const [twitch, youtube, kick] = await Promise.all([settle(getTwitchChannel(user.id)), settle(getYouTubeStream(user.id)), settle(getKickChannel(user.id))]);
+  const problems = [twitch.problem, youtube.problem, kick.problem].filter((problem) => problem !== undefined);
+  // Twitch's where they share one, as it has the most of them, then YouTube's; each one's own fields are its own.
+  const details: StreamDetails = { ...EMPTY, ...kick.value?.details, ...youtube.value?.details, ...twitch.value?.details };
+  const source = twitch.value ? 'Twitch' : youtube.value?.details ? 'YouTube' : kick.value ? 'Kick' : null;
 
   return (
     <StreamShell>

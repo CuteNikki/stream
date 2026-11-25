@@ -57,10 +57,13 @@ export const tagSchema = z
   .max(MAX_TAG_LENGTH, `Tags must be at most ${MAX_TAG_LENGTH} characters.`)
   .regex(/^[\p{L}\p{N}]+$/u, 'Tags can only have letters and numbers.');
 
+const categorySchema = z.object({ id: z.string(), name: z.string(), boxArt: z.string() });
+
 /** What a stream is set to, on every platform at once. */
 export const streamSchema = z.object({
   title: z.string().trim().min(1, 'Title is required!').max(MAX_TITLE_LENGTH, `Title must be at most ${MAX_TITLE_LENGTH} characters.`),
-  category: z.object({ id: z.string(), name: z.string(), boxArt: z.string() }).nullable(),
+  // Twitch's
+  category: categorySchema.nullable(),
   tags: z
     .array(tagSchema)
     .max(MAX_TAGS, `At most ${MAX_TAGS} tags.`)
@@ -82,6 +85,13 @@ export const streamSchema = z.object({
         .refine((description) => !/[<>]/.test(description), "YouTube descriptions can't have < or >."),
       visibility: z.enum(YOUTUBE_VISIBILITIES.map((visibility) => visibility.id)),
       madeForKids: z.boolean(),
+    })
+    .optional(),
+  // Only sent once read from Kick, like YouTube's
+  kick: z
+    .object({
+      // Its own, as Kick's list of categories isn't Twitch's
+      category: categorySchema.nullable(),
     })
     .optional(),
 });

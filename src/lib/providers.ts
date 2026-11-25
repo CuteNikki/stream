@@ -8,6 +8,7 @@
 export const PLATFORMS = [
   { id: 'twitch', label: 'Twitch' },
   { id: 'google', label: 'YouTube' },
+  { id: 'kick', label: 'Kick' },
 ] as const;
 
 export type PlatformId = (typeof PLATFORMS)[number]['id'];
@@ -16,6 +17,8 @@ export type PlatformId = (typeof PLATFORMS)[number]['id'];
 export const PLATFORM_SCOPES: Record<PlatformId, string[]> = {
   twitch: ['channel:manage:broadcast', 'user:read:chat', 'user:write:chat'],
   google: ['https://www.googleapis.com/auth/youtube.force-ssl'],
+  // user:read is always asked for, by Better Auth; its chat comes to Stream's webhook, through events:subscribe
+  kick: ['channel:read', 'channel:write', 'chat:write', 'events:subscribe'],
 };
 
 /**

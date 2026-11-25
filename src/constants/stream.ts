@@ -97,4 +97,4 @@ export const YOUTUBE_CATEGORIES = [
 export const CONTENT_LABELS_GUIDE = 'https://safety.twitch.tv/s/article/Content-Classification-Guidelines';
 
 /** The longest chat message each platform takes. */
-export const MAX_CHAT_MESSAGE_LENGTH = { twitch: 500, google: 200 } as const;
+export const MAX_CHAT_MESSAGE_LENGTH = { twitch: 500, google: 200, kick: 500 } as const;

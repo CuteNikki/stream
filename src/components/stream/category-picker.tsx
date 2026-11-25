@@ -5,25 +5,37 @@ import Image from 'next/image';
 import { useEffect, useId, useRef, useState } from 'react';
 
 import { searchCategories } from '@/lib/actions';
+import { providerLabel } from '@/lib/providers';
 import type { Category } from '@/lib/schemas';
 import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 
-/** How long typing has to pause before searching, so each key doesn't ask Twitch. */
+/** How long typing has to pause before searching, so each key doesn't ask the platform. */
 const SEARCH_DELAY = 250;
 
 function BoxArt({ category, className }: { category: Category; className?: string }) {
   if (!category.boxArt) return <div className={cn('bg-muted shrink-0 rounded', className)} />;
-  // Twitch's CDN already serves it small; optimizing it again would only add a round trip.
+  // The platforms' CDNs already serve it small; optimizing it again would only add a round trip.
   return <Image src={category.boxArt} alt='' width={52} height={72} unoptimized className={cn('bg-muted shrink-0 rounded object-cover', className)} />;
 }
 
 /**
- * The stream's Twitch category: the one set, or a search for another. Both are the same box, the box art's
- * place kept while searching, so changing it doesn't move what's below.
+ * The stream's category on Twitch or Kick, each having its own: the one set, or a search for another. Both are the
+ * same box, the box art's place kept while searching, so changing it doesn't move what's below. Kick can't be left
+ * without one, so there it can only be changed, not removed.
  */
-export function CategoryPicker({ id, value, onChange }: { id?: string; value: Category | null; onChange: (category: Category | null) => void }) {
+export function CategoryPicker({
+  id,
+  platform,
+  value,
+  onChange,
+}: {
+  id?: string;
+  platform: 'twitch' | 'kick';
+  value: Category | null;
+  onChange: (category: Category | null) => void;
+}) {
   const listId = useId();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Category[]>([]);
@@ -42,7 +54,7 @@ export function CategoryPicker({ id, value, onChange }: { id?: string; value: Ca
     const search = ++latest.current;
     const timer = setTimeout(async () => {
       setSearching(true);
-      const result = await searchCategories(typed);
+      const result = await searchCategories(platform, typed);
       if (search !== latest.current) return;
       setSearching(false);
       setActive(0);
@@ -55,7 +67,7 @@ export function CategoryPicker({ id, value, onChange }: { id?: string; value: Ca
       }
     }, SEARCH_DELAY);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [platform, query]);
 
   function close() {
     setQuery('');
@@ -110,7 +122,7 @@ export function CategoryPicker({ id, value, onChange }: { id?: string; value: Ca
             aria-autocomplete='list'
             autoComplete='off'
             autoFocus={open}
-            placeholder='Search Twitch categories'
+            placeholder={`Search ${providerLabel(platform)} categories`}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
@@ -139,9 +151,11 @@ export function CategoryPicker({ id, value, onChange }: { id?: string; value: Ca
               <SearchIcon aria-hidden='true' />
               Change
             </Button>
-            <Button type='button' variant='ghost' size='icon-sm' onClick={() => onChange(null)} aria-label='Remove the category'>
-              <XIcon aria-hidden='true' />
-            </Button>
+            {platform !== 'kick' && (
+              <Button type='button' variant='ghost' size='icon-sm' onClick={() => onChange(null)} aria-label='Remove the category'>
+                <XIcon aria-hidden='true' />
+              </Button>
+            )}
           </>
         ) : (
           value && (

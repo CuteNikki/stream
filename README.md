@@ -1,7 +1,7 @@
 # Stream
 
 Sets your stream's title, category and tags on every platform at once:
-Twitch and YouTube to begin with, Kick to come. On YouTube it sets each stream
+Twitch, YouTube and Kick. On YouTube it sets each stream
 you tick, so a vertical copy beside the stream gets the same. Its chat page
 shows every platform's chat live, one at a time or all together, and writes in
 every chat or the one you pick. You host it yourself, for yourself: the first
@@ -65,14 +65,19 @@ developer app of yours on that platform. The app's redirect URL is
 | -------- | -------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Twitch   | `twitch` | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | [Twitch developer console](https://dev.twitch.tv/console/apps), category "Broadcaster Suite"                 |
 | YouTube  | `google` | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | [Google Cloud](https://console.cloud.google.com/apis/credentials), an OAuth client of type "Web application" |
+| Kick     | `kick`   | `KICK_CLIENT_ID`, `KICK_CLIENT_SECRET`     | [Kick developer settings](https://kick.com/settings/developer)                                               |
 
 For YouTube, the Google Cloud project also needs the **YouTube Data API v3**
 turned on, and its OAuth consent screen set up, with yourself added as a test
 user while it's in testing.
 
+Kick has its own list of categories, so it gets its own category picker, and
+its API can't set the language or branded content.
+
 Then connect each one on the Platforms page. Stream asks Twitch for
-`channel:manage:broadcast`, `user:read:chat` and `user:write:chat`, and Google
-for `youtube.force-ssl`: what they need to change your stream and to read and
+`channel:manage:broadcast`, `user:read:chat` and `user:write:chat`, Google
+for `youtube.force-ssl`, and Kick for `user:read`, `channel:read`,
+`channel:write`, `chat:write` and `events:subscribe`: what they need to change your stream and to read and
 write its chat, and nothing else. A platform connected before Stream asked for
 more shows Reconnect there, which adds the rest.
 

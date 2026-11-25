@@ -86,6 +86,7 @@ export function StreamForm({
     : [...LANGUAGES, { code: details.language, name: details.language }];
   const hasYouTube = platforms.includes('google');
   const hasTwitch = platforms.includes('twitch');
+  const hasKick = platforms.includes('kick');
   const titleLimit = hasYouTube ? MAX_YOUTUBE_TITLE_LENGTH : MAX_TITLE_LENGTH;
   const form = useForm<StreamDetails>({
     resolver: zodResolver(
@@ -172,6 +173,7 @@ export function StreamForm({
                     ))}
                   </SelectContent>
                 </Select>
+                {hasKick && <FormDescription>Not on Kick: its API can&apos;t set it, so change it on Kick itself.</FormDescription>}
                 <FormMessage />
               </FormItem>
             )}
@@ -201,7 +203,7 @@ export function StreamForm({
                 <FormItem>
                   <FormLabel>Category</FormLabel>
                   <FormControl>
-                    <CategoryPicker value={field.value} onChange={field.onChange} />
+                    <CategoryPicker platform='twitch' value={field.value} onChange={field.onChange} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -347,6 +349,24 @@ export function StreamForm({
                     <Checkbox className='mt-0.5' checked={field.value} onCheckedChange={(checked) => field.onChange(checked === true)} />
                     Made for kids. YouTube then turns off live chat, comments and personalised ads.
                   </label>
+                </FormItem>
+              )}
+            />
+          </FormSection>
+        )}
+        {details.kick && (
+          <FormSection id='kick' title='Kick' platforms={['kick']}>
+            <FormField
+              control={form.control}
+              name='kick.category'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <FormControl>
+                    <CategoryPicker platform='kick' value={field.value ?? null} onChange={field.onChange} />
+                  </FormControl>
+                  <FormDescription>Kick&apos;s own list. Search by at least 3 letters of the name.</FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />

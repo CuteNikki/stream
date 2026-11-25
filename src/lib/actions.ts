@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { MAX_THUMBNAIL_SIZE, THUMBNAIL_TYPES } from '@/constants/stream';
 import { auth, forgetTrustedDevices as forget } from '@/lib/auth';
 import { chatSourceName, sendToChat } from '@/lib/chat/send';
+import { searchKickCategories, updateKickChannel } from '@/lib/kick';
 import prisma from '@/lib/prisma';
 import { PlatformError } from '@/lib/platform';
 import { PLATFORMS, providerLabel, type PlatformId } from '@/lib/providers';
@@ -70,8 +71,8 @@ export async function revokeSession(sessionId: string) {
   revalidatePath('/settings');
 }
 
-/** Twitch's categories for the category picker. */
-export async function searchCategories(query: string): Promise<{ categories: Category[] } | { message: string }> {
+/** Twitch's or Kick's categories for its category picker. */
+export async function searchCategories(platform: 'twitch' | 'kick', query: string): Promise<{ categories: Category[] } | { message: string }> {
   const session = await getSession();
   if (!session) return { message: 'You are not signed in.' };
 
@@ -79,7 +80,8 @@ export async function searchCategories(query: string): Promise<{ categories: Cat
   if (!typed) return { categories: [] };
 
   try {
-    return { categories: await searchTwitchCategories(session.user.id, typed) };
+    const search = platform === 'kick' ? searchKickCategories : searchTwitchCategories;
+    return { categories: await search(session.user.id, typed) };
   } catch (error) {
     if (error instanceof PlatformError) return { message: error.message };
     console.error(error);
@@ -105,6 +107,7 @@ export async function updateStream(unsafeData: StreamDetails): Promise<{ results
   const updates: Record<PlatformId, () => Promise<void>> = {
     twitch: () => updateTwitchChannel(session.user.id, data),
     google: () => updateYouTubeStream(session.user.id, data),
+    kick: () => updateKickChannel(session.user.id, data),
   };
 
   const platforms = PLATFORMS.map((platform) => platform.id).filter((id) => connected.some((account) => account.providerId === id));
