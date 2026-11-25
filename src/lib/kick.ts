@@ -60,8 +60,14 @@ export async function searchKickCategories(userId: string, query: string): Promi
   if (!account) throw new PlatformError('Connect Kick to search its categories.');
   if (query.length < MIN_KICK_SEARCH_LENGTH) throw new PlatformError(`Type at least ${MIN_KICK_SEARCH_LENGTH} letters to search Kick.`);
 
-  const results = await kickApi<{ data: KickCategory[] }>(account, `v2/categories?limit=8&name=${encodeURIComponent(query)}`);
-  return (results?.data ?? []).map(category);
+  // Kick finds a name anywhere in a category's, but lists them by id, so the closest go first here
+  const results = await kickApi<{ data: KickCategory[] }>(account, `v2/categories?limit=25&name=${encodeURIComponent(query)}`);
+  const typed = query.toLowerCase();
+  const closeness = (name: string) => (name.toLowerCase() === typed ? 0 : name.toLowerCase().startsWith(typed) ? 1 : 2);
+  return (results?.data ?? [])
+    .toSorted((a, b) => closeness(a.name) - closeness(b.name))
+    .slice(0, 8)
+    .map(category);
 }
 
 /** Sets the title, tags and category. Kick can't be left without a category, so none keeps the one it has. */
