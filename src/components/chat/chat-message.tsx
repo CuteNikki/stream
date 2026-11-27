@@ -4,6 +4,7 @@ import Image from 'next/image';
 import type { ChatMessage, ChatRole, ChatSource } from '@/lib/chat/types';
 import { cn } from '@/lib/utils';
 
+import { MessageActions } from '@/components/chat/message-actions';
 import { ProviderIcon } from '@/components/common/provider-icon';
 
 const ROLES: Record<ChatRole, { icon: LucideIcon; label: string }> = {
@@ -18,11 +19,23 @@ const timeFormat = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute:
 
 /**
  * One message. In the combined chat it starts with where it came from: the platform's icon, and the chat's name
- * where that platform has more than one, like a stream and its vertical copy on YouTube.
+ * where that platform has more than one, like a stream and its vertical copy on YouTube. With `moderate`, while its
+ * chat is still there, it has a menu to delete it or time out or ban its writer.
  */
-export function ChatMessageRow({ message, source, showSource }: { message: ChatMessage; source?: ChatSource; showSource: 'none' | 'icon' | 'name' }) {
+export function ChatMessageRow({
+  message,
+  source,
+  showSource,
+  moderate,
+}: {
+  message: ChatMessage;
+  source?: ChatSource;
+  showSource: 'none' | 'icon' | 'name';
+  moderate: boolean;
+}) {
   return (
-    <li className={cn('rounded-md px-2 py-1 text-sm leading-relaxed wrap-break-word', message.paid && 'bg-primary/10 border-primary/30 my-1 border')}>
+    <li className={cn('group rounded-md px-2 py-1 text-sm leading-relaxed wrap-break-word', message.paid && 'bg-primary/10 border-primary/30 my-1 border')}>
+      {moderate && <MessageActions message={message} />}
       <time dateTime={message.time} className='text-muted-foreground mr-2 text-xs tabular-nums'>
         {timeFormat.format(new Date(message.time))}
       </time>

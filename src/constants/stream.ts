@@ -98,3 +98,12 @@ export const CONTENT_LABELS_GUIDE = 'https://safety.twitch.tv/s/article/Content-
 
 /** The longest chat message each platform takes. */
 export const MAX_CHAT_MESSAGE_LENGTH = { twitch: 500, google: 200, kick: 500 } as const;
+
+/** How long a writer can be timed out for, from the chat's menu: no longer than a week, Kick's longest. */
+export const CHAT_TIMEOUTS = [
+  { seconds: 60, label: '1 minute' },
+  { seconds: 10 * 60, label: '10 minutes' },
+  { seconds: 60 * 60, label: '1 hour' },
+  { seconds: 24 * 60 * 60, label: '1 day' },
+  { seconds: 7 * 24 * 60 * 60, label: '1 week' },
+] as const;

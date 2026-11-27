@@ -72,6 +72,8 @@ export function ChatView({ initialView }: { initialView?: string }) {
   }
 
   const problems = sources.filter((source) => source.state === 'problem');
+  // Chats still there, whose messages can be moderated; an ended YouTube stream's can't
+  const live = new Set(sources.map((source) => source.id));
 
   return (
     <div className='flex min-h-0 flex-1 flex-col gap-3'>
@@ -114,7 +116,7 @@ export function ChatView({ initialView }: { initialView?: string }) {
                 <span className='truncate'>{source.name}</span>
                 <StateDot source={source} />
               </h2>
-              <ChatFeed messages={messages.filter((message) => message.source === source.id)} emptyText={emptyText} />
+              <ChatFeed messages={messages.filter((message) => message.source === source.id)} live={live} emptyText={emptyText} />
             </section>
           ))}
         </div>
@@ -124,6 +126,7 @@ export function ChatView({ initialView }: { initialView?: string }) {
           key={shownTab}
           messages={shownTab === ALL || shownTab === SIDE_BY_SIDE ? messages : messages.filter((message) => message.source === shownTab)}
           sources={shownTab === ALL || shownTab === SIDE_BY_SIDE ? sources : undefined}
+          live={live}
           emptyText={emptyText}
         />
       )}
@@ -135,9 +138,10 @@ export function ChatView({ initialView }: { initialView?: string }) {
 
 /**
  * Messages that stay scrolled to the newest while reading along, and are left alone when scrolled up to read back,
- * with a button back down. Given `sources`, each message says which chat it's from.
+ * with a button back down. Given `sources`, each message says which chat it's from. Those in a `live` chat can be
+ * moderated.
  */
-function ChatFeed({ messages, sources, emptyText }: { messages: ChatMessage[]; sources?: ChatSource[]; emptyText: string }) {
+function ChatFeed({ messages, sources, live, emptyText }: { messages: ChatMessage[]; sources?: ChatSource[]; live: Set<string>; emptyText: string }) {
   const [following, setFollowing] = useState(true);
   const feed = useRef<HTMLDivElement>(null);
 
@@ -168,6 +172,7 @@ function ChatFeed({ messages, sources, emptyText }: { messages: ChatMessage[]; s
                   message={message}
                   source={source}
                   showSource={!sources ? 'none' : source && perPlatform(source) > 1 ? 'name' : 'icon'}
+                  moderate={live.has(message.source)}
                 />
               );
             })}

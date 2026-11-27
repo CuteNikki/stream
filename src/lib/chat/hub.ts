@@ -69,8 +69,14 @@ class ChatHub {
     this.sink(source).messages(messages);
   }
 
-  /** A writer timed out or banned on Kick, whose webhook says so on its own, like its messages. */
-  receiveBan(source: string, author: string) {
+  /** Messages deleted from Stream, taken away at once. */
+  messagesRemoved(source: string, ids: string[]) {
+    if (!this.running || !this.connections.has(source)) return;
+    this.sink(source).deleted(ids);
+  }
+
+  /** A writer timed out or banned, from Stream or as Kick's webhook says on its own: their messages are taken away. */
+  writerRemoved(source: string, author: string) {
     if (!this.running || !this.connections.has(source)) return;
     this.sink(source).cleared(author);
   }

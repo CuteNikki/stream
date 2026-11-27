@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { MAX_EMAIL_LENGTH, MAX_NAME_LENGTH, MAX_PASSWORD_LENGTH, MIN_EMAIL_LENGTH, MIN_NAME_LENGTH, MIN_PASSWORD_LENGTH } from '@/constants/auth';
 import {
+  CHAT_TIMEOUTS,
   CONTENT_LABELS,
   MAX_CHAT_MESSAGE_LENGTH,
   MAX_TAG_LENGTH,
@@ -106,7 +107,19 @@ export const chatMessageSchema = z.object({
   sources: z.array(z.string().min(1).max(100)).min(1, 'Pick a chat to send it to.').max(20),
 });
 
+export const chatModerationSchema = z.object({
+  source: z.string().min(1).max(100),
+  messageId: z.string().min(1).max(300),
+  authorId: z.string().min(1).max(100).optional(),
+  action: z.discriminatedUnion('type', [
+    z.object({ type: z.literal('delete') }),
+    z.object({ type: z.literal('timeout'), seconds: z.union(CHAT_TIMEOUTS.map((timeout) => z.literal(timeout.seconds))) }),
+    z.object({ type: z.literal('ban') }),
+  ]),
+});
+
 export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
+export type ChatModerationInput = z.infer<typeof chatModerationSchema>;
 export type StreamDetails = z.infer<typeof streamSchema>;
 export type YouTubeDetails = NonNullable<StreamDetails['youtube']>;
 export type Category = NonNullable<StreamDetails['category']>;

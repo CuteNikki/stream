@@ -23,6 +23,6 @@ export async function POST(request: Request) {
 
   const hub = chatHub(account.userId);
   if (type === 'chat.message.sent') hub.receive(KICK_SOURCE, [kickMessage(event as KickChatEvent)]);
-  else hub.receiveBan(KICK_SOURCE, String((event as KickBanEvent).banned_user.user_id));
+  else hub.writerRemoved(KICK_SOURCE, String((event as KickBanEvent).banned_user.user_id));
   return new Response(null, { status: 204 });
 }

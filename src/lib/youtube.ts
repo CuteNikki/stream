@@ -65,7 +65,8 @@ export async function youtube<T>(account: Account, path: string, init?: RequestI
     throw new PlatformError(error?.message ? `YouTube: ${error.message}` : `YouTube didn't answer (${response.status}).`);
   }
 
-  return (await response.json()) as T;
+  // Deleting answers with nothing
+  return (response.status === 204 ? null : await response.json()) as T;
 }
 
 /**

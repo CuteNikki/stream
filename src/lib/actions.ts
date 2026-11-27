@@ -8,12 +8,22 @@ import { z } from 'zod';
 
 import { MAX_THUMBNAIL_SIZE, THUMBNAIL_TYPES } from '@/constants/stream';
 import { auth, forgetTrustedDevices as forget } from '@/lib/auth';
+import { moderateChat } from '@/lib/chat/moderate';
 import { chatSourceName, sendToChat } from '@/lib/chat/send';
 import { searchKickCategories, updateKickChannel } from '@/lib/kick';
 import prisma from '@/lib/prisma';
 import { PlatformError } from '@/lib/platform';
 import { PLATFORMS, providerLabel, type PlatformId } from '@/lib/providers';
-import { chatMessageSchema, streamSchema, updateNameSchema, type Category, type ChatMessageInput, type StreamDetails } from '@/lib/schemas';
+import {
+  chatMessageSchema,
+  chatModerationSchema,
+  streamSchema,
+  updateNameSchema,
+  type Category,
+  type ChatMessageInput,
+  type ChatModerationInput,
+  type StreamDetails,
+} from '@/lib/schemas';
 import { getSession, requireUser } from '@/lib/session';
 import { searchTwitchCategories, updateTwitchChannel } from '@/lib/twitch';
 import { setYouTubeThumbnail, updateYouTubeStream } from '@/lib/youtube';
@@ -173,6 +183,23 @@ export async function sendChatMessage(unsafeData: ChatMessageInput): Promise<{ r
     }),
   );
   return { results };
+}
+
+/** Deletes a chat message, or times out or bans its writer. */
+export async function moderateChatMessage(unsafeData: ChatModerationInput): Promise<{ message: string } | undefined> {
+  const { success, data } = chatModerationSchema.safeParse(unsafeData);
+  if (!success) return { message: 'Unable to do that!' };
+
+  const session = await getSession();
+  if (!session) return { message: 'You are not signed in.' };
+
+  try {
+    await moderateChat(session.user.id, data);
+  } catch (error) {
+    if (error instanceof PlatformError) return { message: error.message };
+    console.error(error);
+    return { message: 'Unable to do that!' };
+  }
 }
 
 export async function setPassword(newPassword: string) {
