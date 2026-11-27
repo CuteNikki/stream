@@ -7,7 +7,7 @@ import type { ChatEvent, ChatMessage, ChatSource } from '@/lib/chat/types';
 import { startYouTubeChat } from '@/lib/chat/youtube';
 import { PlatformError, platformAccount } from '@/lib/platform';
 import prisma from '@/lib/prisma';
-import { CHAT_SCOPES, hasAllScopes } from '@/lib/providers';
+import { CHAT_SCOPES, hasAllScopes, MODERATION_SCOPES } from '@/lib/providers';
 import { listBroadcasts } from '@/lib/youtube';
 
 /** Messages kept for a chat page opened later, so it doesn't start empty. */
@@ -69,6 +69,12 @@ class ChatHub {
     this.sink(source).messages(messages);
   }
 
+  /** A writer timed out or banned on Kick, whose webhook says so on its own, like its messages. */
+  receiveBan(source: string, author: string) {
+    if (!this.running || !this.connections.has(source)) return;
+    this.sink(source).cleared(author);
+  }
+
   /** A YouTube chat's id, to write in it. */
   liveChatId(source: string) {
     return this.connections.get(source)?.liveChatId;
@@ -98,10 +104,14 @@ class ChatHub {
         this.emit({ type: 'deleted', ids });
         this.forget(prisma.chatMessage.deleteMany({ where: { userId: this.userId, id: { in: ids } } }));
       },
-      cleared: () => {
-        this.backlog = this.backlog.filter((message) => message.source !== id);
-        this.emit({ type: 'cleared', source: id });
-        this.forget(prisma.chatMessage.deleteMany({ where: { userId: this.userId, source: id } }));
+      cleared: (author) => {
+        this.backlog = this.backlog.filter((message) => message.source !== id || (author !== undefined && message.author.id !== author));
+        this.emit({ type: 'cleared', source: id, author });
+        this.forget(
+          prisma.chatMessage.deleteMany({
+            where: { userId: this.userId, source: id, ...(author !== undefined && { data: { path: ['author', 'id'], equals: author } }) },
+          }),
+        );
       },
       state: (state, problem) => {
         const connection = this.connections.get(id);
@@ -227,7 +237,7 @@ class ChatHub {
       return sink.state('problem', 'Connect Kick again on the platforms page, so Stream may use its chat.');
     if (!kickChatReachable()) return sink.state('problem', "Kick's chat only arrives where Kick can reach Stream, on its public address, not on localhost.");
     try {
-      await subscribeToKickChat(account);
+      await subscribeToKickChat(account, hasAllScopes('kick', account.scope, MODERATION_SCOPES));
       sink.state('connected');
     } catch (error) {
       if (!(error instanceof PlatformError)) console.error(error);

@@ -50,7 +50,10 @@ export function ChatView({ initialView }: { initialView?: string }) {
           return [...current, ...added].slice(-KEPT);
         });
       else if (event.type === 'deleted') setMessages((current) => current.filter((existing) => !event.ids.includes(existing.id)));
-      else setMessages((current) => current.filter((existing) => existing.source !== event.source));
+      else
+        setMessages((current) =>
+          current.filter((existing) => existing.source !== event.source || (event.author !== undefined && existing.author.id !== event.author)),
+        );
     };
     return () => events.close();
   }, []);

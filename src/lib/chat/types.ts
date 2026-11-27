@@ -38,4 +38,5 @@ export type ChatEvent =
   | { type: 'sources'; sources: ChatSource[] }
   | { type: 'messages'; messages: ChatMessage[] }
   | { type: 'deleted'; ids: string[] }
-  | { type: 'cleared'; source: string };
+  /** A chat cleared, or with `author`, only that writer's messages in it, as they were timed out or banned. */
+  | { type: 'cleared'; source: string; author?: string };

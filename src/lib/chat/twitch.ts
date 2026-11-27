@@ -11,12 +11,13 @@ type Account = { id: string; userId: string; accountId: string; providerId: stri
 export type ChatSink = {
   messages: (messages: ChatMessage[]) => void;
   deleted: (ids: string[]) => void;
-  cleared: () => void;
+  /** The whole chat cleared, or with `author`, only that writer's messages, as they were timed out or banned. */
+  cleared: (author?: string) => void;
   state: (state: 'connecting' | 'connected' | 'problem', problem?: string) => void;
 };
 
 const EVENTSUB_URL = 'wss://eventsub.wss.twitch.tv/ws?keepalive_timeout_seconds=30';
-const SUBSCRIPTIONS = ['channel.chat.message', 'channel.chat.message_delete', 'channel.chat.clear'];
+const SUBSCRIPTIONS = ['channel.chat.message', 'channel.chat.message_delete', 'channel.chat.clear', 'channel.chat.clear_user_messages'];
 
 /**
  * Keeps a connection to Twitch's chat for the account's own channel, through EventSub: it says hello with a
@@ -109,10 +110,11 @@ export function startTwitchChat(account: Account, sink: ChatSink): () => void {
     }
   }
 
-  function handle(type: string, event: ChatMessageEvent & { message_id: string }, time: string) {
+  function handle(type: string, event: ChatMessageEvent & { target_user_id: string }, time: string) {
     if (type === 'channel.chat.message') sink.messages([twitchMessage(event, time)]);
     else if (type === 'channel.chat.message_delete') sink.deleted([`${TWITCH_SOURCE}:${event.message_id}`]);
     else if (type === 'channel.chat.clear') sink.cleared();
+    else if (type === 'channel.chat.clear_user_messages') sink.cleared(event.target_user_id);
   }
 
   sink.state('connecting');

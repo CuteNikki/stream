@@ -56,15 +56,17 @@ export type LiveChatMessage = {
     superChatDetails?: { amountDisplayString: string; userComment?: string };
     superStickerDetails?: { amountDisplayString: string };
     deletedMessageDetails?: { deletedMessageId: string };
+    userBannedDetails?: { bannedUserDetails: { channelId: string } };
   };
   authorDetails?: { channelId: string; displayName: string; isChatOwner: boolean; isChatModerator: boolean; isChatSponsor: boolean };
 };
 
-/** What one of YouTube's chat items means for the chat: a message to show, one to take away, or nothing. */
-export function youtubeItem(source: string, item: LiveChatMessage): { message: ChatMessage } | { deleted: string } | null {
+/** What one of YouTube's chat items means for the chat: a message to show, one to take away, a writer's to take away as they were banned, or nothing. */
+export function youtubeItem(source: string, item: LiveChatMessage): { message: ChatMessage } | { deleted: string } | { banned: string } | null {
   const { snippet, authorDetails } = item;
   if (snippet.type === 'messageDeletedEvent' && snippet.deletedMessageDetails)
     return { deleted: `${source}:${snippet.deletedMessageDetails.deletedMessageId}` };
+  if (snippet.type === 'userBannedEvent' && snippet.userBannedDetails) return { banned: snippet.userBannedDetails.bannedUserDetails.channelId };
   const shown = ['textMessageEvent', 'superChatEvent', 'superStickerEvent', 'newSponsorEvent', 'memberMilestoneChatEvent', 'membershipGiftingEvent'];
   if (!shown.includes(snippet.type) || !authorDetails) return null;
 
@@ -103,6 +105,9 @@ export type KickChatEvent = {
   content: string;
   created_at: string;
 };
+
+/** A writer timed out or banned, as Kick's webhook sends it. */
+export type KickBanEvent = { banned_user: { user_id: number } };
 
 /**
  * A message as Kick's webhook sends it, the way the chat shows it. Emotes are written into its text as

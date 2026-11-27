@@ -107,6 +107,15 @@ describe('youtubeItem', () => {
     ).toEqual({ deleted: 'youtube:b1:y1' });
   });
 
+  test('turns a ban or timeout into the writer whose messages go', () => {
+    expect(
+      youtubeItem(source, {
+        id: 'y5',
+        snippet: { type: 'userBannedEvent', publishedAt: '2026-11-24T18:00:00Z', userBannedDetails: { bannedUserDetails: { channelId: 'UC1' } } },
+      }),
+    ).toEqual({ banned: 'UC1' });
+  });
+
   test('skips what the chat has nothing to show for', () => {
     expect(youtubeItem(source, { id: 'y4', snippet: { type: 'chatEndedEvent', publishedAt: '2026-11-24T18:00:00Z' } })).toBeNull();
   });

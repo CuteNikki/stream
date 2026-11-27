@@ -7,6 +7,8 @@ import { siteURL } from '@/lib/site-url';
 type Account = { id: string; userId: string; accountId: string; providerId: string };
 
 const CHAT_EVENT = 'chat.message.sent';
+/** Writers timed out or banned, whose messages are then taken away. Only with permission to moderate, which Kick may want for it. */
+const BAN_EVENT = 'moderation.banned';
 
 /** An event older than this is turned away, so a copy of an old one can't be sent again. */
 const MAX_EVENT_AGE_MS = 10 * 60_000;
@@ -19,16 +21,17 @@ export function kickChatReachable() {
 }
 
 /**
- * Asks Kick to send the channel's chat to Stream's webhook, unless it already does. Asked again each round, as
- * Kick drops a subscription whose webhook kept failing for a day.
+ * Asks Kick to send the channel's chat to Stream's webhook, the events it doesn't send yet. Asked again each round,
+ * as Kick drops a subscription whose webhook kept failing for a day. With `bans`, also its writers timed out or banned.
  */
-export async function subscribeToKickChat(account: Account) {
+export async function subscribeToKickChat(account: Account, bans: boolean) {
   const existing = await kickApi<{ data: { event: string }[] }>(account, `v1/events/subscriptions?broadcaster_user_id=${account.accountId}`);
-  if (existing?.data.some((subscription) => subscription.event === CHAT_EVENT)) return;
+  const missing = (bans ? [CHAT_EVENT, BAN_EVENT] : [CHAT_EVENT]).filter((event) => !existing?.data.some((subscription) => subscription.event === event));
+  if (!missing.length) return;
 
   const created = await kickApi<{ data: { name: string; error?: string }[] }>(account, 'v1/events/subscriptions', {
     method: 'POST',
-    body: JSON.stringify({ events: [{ name: CHAT_EVENT, version: 1 }], method: 'webhook' }),
+    body: JSON.stringify({ events: missing.map((name) => ({ name, version: 1 })), method: 'webhook' }),
   });
   const failed = created?.data.find((subscription) => subscription.error);
   if (failed) throw new PlatformError(`Kick: ${failed.error}`);

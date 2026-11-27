@@ -52,6 +52,7 @@ export function startYouTubeChat(account: Account, source: string, liveChatId: s
         const deleted = items.flatMap((item) => ('deleted' in item ? [item.deleted] : []));
         if (messages.length) sink.messages(messages);
         if (deleted.length) sink.deleted(deleted);
+        for (const item of items) if ('banned' in item) sink.cleared(item.banned);
         pageToken = answer.nextPageToken ?? pageToken;
         if (answer.offlineAt) return 'ended';
       }
