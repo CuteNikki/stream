@@ -11,6 +11,7 @@ const BADGE_ROLES: Record<string, ChatRole> = { broadcaster: 'owner', moderator:
 
 export type ChatMessageEvent = {
   message_id: string;
+  chatter_user_id: string;
   chatter_user_name: string;
   color: string;
   badges: { set_id: string }[];
@@ -30,6 +31,7 @@ export function twitchMessage(event: ChatMessageEvent, time: string): ChatMessag
     source: TWITCH_SOURCE,
     platform: 'twitch',
     author: {
+      id: event.chatter_user_id,
       name: event.chatter_user_name,
       color: event.color || null,
       roles: [...new Set(event.badges.flatMap((badge) => (BADGE_ROLES[badge.set_id] ? [BADGE_ROLES[badge.set_id]] : [])))],
@@ -55,7 +57,7 @@ export type LiveChatMessage = {
     superStickerDetails?: { amountDisplayString: string };
     deletedMessageDetails?: { deletedMessageId: string };
   };
-  authorDetails?: { displayName: string; isChatOwner: boolean; isChatModerator: boolean; isChatSponsor: boolean };
+  authorDetails?: { channelId: string; displayName: string; isChatOwner: boolean; isChatModerator: boolean; isChatSponsor: boolean };
 };
 
 /** What one of YouTube's chat items means for the chat: a message to show, one to take away, or nothing. */
@@ -76,7 +78,7 @@ export function youtubeItem(source: string, item: LiveChatMessage): { message: C
       id: `${source}:${item.id}`,
       source,
       platform: 'google',
-      author: { name: authorDetails.displayName, color: null, roles },
+      author: { id: authorDetails.channelId, name: authorDetails.displayName, color: null, roles },
       parts: text ? [{ type: 'text', text }] : [],
       paid: snippet.superChatDetails?.amountDisplayString ?? snippet.superStickerDetails?.amountDisplayString ?? null,
       time: snippet.publishedAt,
@@ -97,7 +99,7 @@ const KICK_BADGE_ROLES: Record<string, ChatRole> = {
 
 export type KickChatEvent = {
   message_id: string;
-  sender: { username: string; identity: { username_color: string; badges: { type: string }[] } | null };
+  sender: { user_id: number; username: string; identity: { username_color: string; badges: { type: string }[] } | null };
   content: string;
   created_at: string;
 };
@@ -122,6 +124,7 @@ export function kickMessage(event: KickChatEvent): ChatMessage {
     source: KICK_SOURCE,
     platform: 'kick',
     author: {
+      id: String(event.sender.user_id),
       name: event.sender.username,
       color: event.sender.identity?.username_color || null,
       roles: [...new Set(badges.flatMap((badge) => (KICK_BADGE_ROLES[badge.type] ? [KICK_BADGE_ROLES[badge.type]] : [])))],

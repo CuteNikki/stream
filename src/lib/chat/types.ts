@@ -13,7 +13,8 @@ export type ChatMessage = {
   source: string;
   /** Its platform, for its icon even once its chat has ended. */
   platform: PlatformId;
-  author: { name: string; color: string | null; roles: ChatRole[] };
+  /** `id` is the writer's id on its platform, to time them out or ban them; messages kept from before it was there have none. */
+  author: { id?: string; name: string; color: string | null; roles: ChatRole[] };
   parts: ChatPart[];
   /** A Super Chat's or cheer's amount, as the platform writes it, e.g. '€5.00' or '100 bits'. */
   paid: string | null;
