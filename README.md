@@ -78,11 +78,14 @@ a webhook: turn webhooks on in the Kick app, with the URL
 internet, so Kick's chat doesn't show while developing on localhost.
 
 Then connect each one on the Platforms page. Stream asks Twitch for
-`channel:manage:broadcast`, `user:read:chat` and `user:write:chat`, Google
+`channel:manage:broadcast`, `user:read:chat`, `user:write:chat`,
+`moderator:manage:chat_messages` and `moderator:manage:banned_users`, Google
 for `youtube.force-ssl`, and Kick for `user:read`, `channel:read`,
-`channel:write`, `chat:write` and `events:subscribe`: what they need to change your stream and to read and
-write its chat, and nothing else. A platform connected before Stream asked for
-more shows Reconnect there, which adds the rest.
+`channel:write`, `chat:write`, `events:subscribe`,
+`moderation:chat_message:manage` and `moderation:ban`: what they need to change
+your stream and to read, write and moderate its chat, and nothing else. A
+platform connected before Stream asked for more shows Reconnect there, which
+adds the rest; its chat keeps working until then.
 
 ## Working on it
 

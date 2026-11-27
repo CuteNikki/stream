@@ -7,7 +7,7 @@ import type { ChatEvent, ChatMessage, ChatSource } from '@/lib/chat/types';
 import { startYouTubeChat } from '@/lib/chat/youtube';
 import { PlatformError, platformAccount } from '@/lib/platform';
 import prisma from '@/lib/prisma';
-import { hasAllScopes } from '@/lib/providers';
+import { CHAT_SCOPES, hasAllScopes } from '@/lib/providers';
 import { listBroadcasts } from '@/lib/youtube';
 
 /** Messages kept for a chat page opened later, so it doesn't start empty. */
@@ -153,7 +153,7 @@ class ChatHub {
     const account = await platformAccount(this.userId, 'twitch');
     if (!this.running) return;
     const current = this.connections.get(TWITCH_SOURCE);
-    const allowed = !!account && hasAllScopes('twitch', account.scope);
+    const allowed = !!account && hasAllScopes('twitch', account.scope, CHAT_SCOPES);
     // Already as it should be: connected and allowed, or waiting and still not
     if (current && account && !!current.waiting === !allowed) return;
     if (!current && !account) return;
@@ -223,7 +223,8 @@ class ChatHub {
     const sink = this.sink(KICK_SOURCE);
     if (!current) this.emit({ type: 'sources', sources: this.sources() });
 
-    if (!hasAllScopes('kick', account.scope)) return sink.state('problem', 'Connect Kick again on the platforms page, so Stream may use its chat.');
+    if (!hasAllScopes('kick', account.scope, CHAT_SCOPES))
+      return sink.state('problem', 'Connect Kick again on the platforms page, so Stream may use its chat.');
     if (!kickChatReachable()) return sink.state('problem', "Kick's chat only arrives where Kick can reach Stream, on its public address, not on localhost.");
     try {
       await subscribeToKickChat(account);

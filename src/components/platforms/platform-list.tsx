@@ -106,7 +106,7 @@ export function PlatformList({
               <span className='flex min-w-0 flex-1 flex-col'>
                 <span className='font-medium'>{label}</span>
                 {account && !hasAllScopes(provider, account.scope) && (
-                  <span className='text-muted-foreground text-sm'>Connect it again to let Stream use its chat too.</span>
+                  <span className='text-muted-foreground text-sm'>Connect it again to let Stream use and moderate its chat too.</span>
                 )}
               </span>
               {account ? (

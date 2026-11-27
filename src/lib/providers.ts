@@ -13,21 +13,38 @@ export const PLATFORMS = [
 
 export type PlatformId = (typeof PLATFORMS)[number]['id'];
 
-/** What each platform lets Stream do, asked for when it's connected: set the stream's details, and read and write its chat. */
-export const PLATFORM_SCOPES: Record<PlatformId, string[]> = {
-  twitch: ['channel:manage:broadcast', 'user:read:chat', 'user:write:chat'],
+/** What each platform's chat needs: reading it and writing in it. */
+export const CHAT_SCOPES: Record<PlatformId, string[]> = {
+  twitch: ['user:read:chat', 'user:write:chat'],
   google: ['https://www.googleapis.com/auth/youtube.force-ssl'],
-  // user:read is always asked for, by Better Auth; its chat comes to Stream's webhook, through events:subscribe
-  kick: ['channel:read', 'channel:write', 'chat:write', 'events:subscribe'],
+  // Its chat comes to Stream's webhook, through events:subscribe
+  kick: ['chat:write', 'events:subscribe'],
+};
+
+/** What moderating each platform's chat needs: deleting messages, and timing out and banning their writers. */
+export const MODERATION_SCOPES: Record<PlatformId, string[]> = {
+  twitch: ['moderator:manage:chat_messages', 'moderator:manage:banned_users'],
+  // youtube.force-ssl covers moderating too
+  google: ['https://www.googleapis.com/auth/youtube.force-ssl'],
+  kick: ['moderation:chat_message:manage', 'moderation:ban'],
+};
+
+/** What each platform lets Stream do, asked for when it's connected: set the stream's details, and read, write and moderate its chat. */
+export const PLATFORM_SCOPES: Record<PlatformId, string[]> = {
+  twitch: [...new Set(['channel:manage:broadcast', ...CHAT_SCOPES.twitch, ...MODERATION_SCOPES.twitch])],
+  google: [...new Set([...CHAT_SCOPES.google, ...MODERATION_SCOPES.google])],
+  // user:read is always asked for, by Better Auth
+  kick: [...new Set(['channel:read', 'channel:write', ...CHAT_SCOPES.kick, ...MODERATION_SCOPES.kick])],
 };
 
 /**
- * Whether a connected account was given everything Stream asks for now. One connected before Stream asked for more,
- * like Twitch's chat, needs connecting again, which adds the rest.
+ * Whether a connected account was given everything Stream asks for now, or only the `needed` ones. One connected
+ * before Stream asked for more, like moderating its chat, needs connecting again, which adds the rest.
  */
-export function hasAllScopes(platform: string, scope: string | null) {
+export function hasAllScopes(platform: string, scope: string | null, needed?: Record<PlatformId, string[]>) {
   const granted = new Set((scope ?? '').split(',').map((part) => part.trim()));
-  return !(platform in PLATFORM_SCOPES) || PLATFORM_SCOPES[platform as PlatformId].every((needed) => granted.has(needed));
+  const wanted = needed ?? PLATFORM_SCOPES;
+  return !(platform in wanted) || wanted[platform as PlatformId].every((one) => granted.has(one));
 }
 
 export function providerLabel(id: string) {
